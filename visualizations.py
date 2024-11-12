@@ -14,7 +14,7 @@ def visualize_reconstructions(model, data_loader, device, num_images=8,
         device: torch device
         num_images: Number of images to visualize
         display: If True, displays the plot. If False, saves to disk
-        save_path: Directory to save the visualization. If None, uses './visualizations'
+        save_path: Directory to save the visualization. If None, uses './viz_outputs'
     """
     model.eval()
     save_path = Path(save_path) if save_path else Path('./viz_outputs')

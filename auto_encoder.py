@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 import numpy as np
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 from torchinfo import summary
 
 class Encoder(nn.Module):
@@ -10,7 +10,8 @@ class Encoder(nn.Module):
                  conv_filters: List[int],
                  conv_kernels: List[int],
                  conv_strides: List[int],
-                 latent_dim: int):
+                 latent_dim: int,
+                 dropout_rate: float = 0.2):  # Added dropout rate parameter
         """
         Encoder network for VAE.
         
@@ -20,6 +21,7 @@ class Encoder(nn.Module):
             conv_kernels: List of kernel sizes for each conv layer
             conv_strides: List of strides for each conv layer
             latent_dim: Dimension of latent space
+            dropout_rate: Dropout probability
         """
         super().__init__()
         
@@ -29,6 +31,7 @@ class Encoder(nn.Module):
         self.conv_strides = conv_strides
         self.latent_dim = latent_dim
         self.num_conv_layers = len(conv_filters)
+        self.dropout_rate = dropout_rate
         
         # Build the encoder network
         self.conv_layers = self._build_conv_layers()
@@ -41,6 +44,7 @@ class Encoder(nn.Module):
             self.flatten_size = dummy_output.view(1, -1).size(1)
         
         # Mean and variance dense layers for latent space
+        self.dropout = nn.Dropout(dropout_rate)
         self.fc_mu = nn.Linear(self.flatten_size, latent_dim)
         self.fc_var = nn.Linear(self.flatten_size, latent_dim)
     
@@ -54,29 +58,20 @@ class Encoder(nn.Module):
             layers.extend([
                 nn.Conv2d(in_channels, f, kernel_size=k, stride=s, padding=padding),
                 nn.ReLU(),
-                nn.BatchNorm2d(f)
+                nn.BatchNorm2d(f),
+                nn.Dropout2d(self.dropout_rate)  # Added 2D dropout after each conv block
             ])
             in_channels = f
             
         return nn.Sequential(*layers)
     
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor]:
-        """
-        Forward pass through encoder.
-        
-        Args:
-            x: Input tensor of shape (batch_size, channels, height, width)
-            
-        Returns:
-            mu: Mean vector of latent space
-            log_var: Log variance vector of latent space
-        """
-        # Ensure input is in correct format (BCHW)
         if x.size(1) != self.input_shape[2]:
             x = x.permute(0, 3, 1, 2)
             
         x = self.conv_layers(x)
         x = self.flatten(x)
+        x = self.dropout(x)  # Added dropout before final dense layers
         mu = self.fc_mu(x)
         log_var = self.fc_var(x)
         return mu, log_var
@@ -94,7 +89,8 @@ class Decoder(nn.Module):
                  conv_filters: List[int],
                  conv_kernels: List[int],
                  conv_strides: List[int],
-                 latent_dim: int):
+                 latent_dim: int,
+                 dropout_rate: float = 0.2):  # Added dropout rate parameter
         """
         Decoder network for VAE.
         
@@ -104,6 +100,7 @@ class Decoder(nn.Module):
             conv_kernels: List of kernel sizes for each conv layer
             conv_strides: List of strides for each conv layer
             latent_dim: Dimension of latent space
+            dropout_rate: Dropout probability
         """
         super().__init__()
         
@@ -113,6 +110,7 @@ class Decoder(nn.Module):
         self.conv_strides = conv_strides
         self.latent_dim = latent_dim
         self.num_conv_layers = len(conv_filters)
+        self.dropout_rate = dropout_rate
         
         # Build the decoder network
         # First, calculate the initial reshape size
@@ -126,7 +124,12 @@ class Decoder(nn.Module):
         self.flatten_size = np.prod(self.reshape_size)
         
         # Build layers
-        self.decoder_dense = nn.Linear(latent_dim, self.flatten_size)
+        self.decoder_dense = nn.Sequential(
+            nn.Linear(latent_dim, self.flatten_size),
+            nn.ReLU(),
+            nn.Dropout(dropout_rate)  # Added dropout after dense layer
+        )
+        
         self.decoder_conv = self._build_conv_transpose_layers()
     
     def _build_conv_transpose_layers(self) -> nn.Sequential:
@@ -149,7 +152,8 @@ class Decoder(nn.Module):
                     output_padding=out_padding
                 ),
                 nn.ReLU(),
-                nn.BatchNorm2d(filters[i + 1])
+                nn.BatchNorm2d(filters[i + 1]),
+                nn.Dropout2d(self.dropout_rate)  # Added 2D dropout after each conv block
             ])
         
         # Final layer to get back to original number of channels
@@ -164,25 +168,17 @@ class Decoder(nn.Module):
                 padding=padding,
                 output_padding=out_padding
             ),
-            nn.Sigmoid()
+            nn.Sigmoid()  # No dropout after final sigmoid activation
         ])
         
         return nn.Sequential(*layers)
     
     def forward(self, z: torch.Tensor) -> torch.Tensor:
-        """
-        Forward pass through decoder.
-        
-        Args:
-            z: Latent vector of shape (batch_size, latent_dim)
-            
-        Returns:
-            Reconstructed image tensor of shape (batch_size, channels, height, width)
-        """
         x = self.decoder_dense(z)
         x = x.view(-1, *self.reshape_size)
         x = self.decoder_conv(x)
         return x
+
     
     def summary(self, batch_size: int = 32) -> None:
         """Print model summary."""
@@ -196,55 +192,45 @@ class VAE(nn.Module):
                  conv_filters: List[int],
                  conv_kernels: List[int],
                  conv_strides: List[int],
-                 latent_dim: int):
-        """
-        Variational Autoencoder.
-        
-        Args:
-            input_shape: (height, width, channels)
-            conv_filters: List of number of filters for each conv layer
-            conv_kernels: List of kernel sizes for each conv layer
-            conv_strides: List of strides for each conv layer
-            latent_dim: Dimension of latent space
-        """
+                 latent_dim: int,
+                 dropout_rate: float = 0.2,
+                 seed = 42
+                 ): 
         super().__init__()
         
         self.input_shape = input_shape
         self.latent_dim = latent_dim
         
-        # Build encoder and decoder
-        self.encoder = Encoder(input_shape, conv_filters, conv_kernels, 
-                             conv_strides, latent_dim)
-        self.decoder = Decoder(input_shape, conv_filters, conv_kernels, 
-                             conv_strides, latent_dim)
+        # Build encoder and decoder with dropout
+        self.encoder = Encoder(
+            input_shape, conv_filters, conv_kernels, 
+            conv_strides, latent_dim, dropout_rate
+        )
+        self.decoder = Decoder(
+            input_shape, conv_filters, conv_kernels, 
+            conv_strides, latent_dim, dropout_rate
+        )
     
     def reparameterize(self, mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
-        """Reparameterization trick."""
         std = torch.exp(0.5 * log_var)
         eps = torch.randn_like(std)
         return mu + eps * std
     
     def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """
-        Forward pass through VAE.
-        
-        Args:
-            x: Input tensor of shape (batch_size, height, width, channels)
-            
-        Returns:
-            reconstruction: Reconstructed input with same shape as input
-            mu: Mean of latent space
-            log_var: Log variance of latent space
-        """
         mu, log_var = self.encoder(x)
         z = self.reparameterize(mu, log_var)
         reconstruction = self.decoder(z)
-        
-        # Convert reconstruction from BCHW to BHWC if input was BHWC
-        if x.size(1) != self.input_shape[2]:  # If input was BHWC
+        if x.size(1) != self.input_shape[2]:
             reconstruction = reconstruction.permute(0, 2, 3, 1)
-            
         return reconstruction, mu, log_var
+    
+    def _init_weights(self, m):
+        """Initialize model weights with Xavier initialization."""
+        if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d, nn.Linear)):
+            torch.manual_seed(self.seed)
+            nn.init.xavier_uniform_(m.weight)
+            if m.bias is not None:
+                nn.init.zeros_(m.bias)
     
     def summary(self, batch_size: int = 32) -> None:
         """Print model summary."""

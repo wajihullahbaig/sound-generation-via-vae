@@ -1,22 +1,53 @@
 
-import json
 from datetime import datetime
+import os
 from data_module import MNISTDataModule
 from trainer import VAETrainer
 import torch
 from auto_encoder import VAE
 import torch.optim as optim
+from typing import List, Tuple, Optional
 from torch.optim.lr_scheduler import ReduceLROnPlateau
+import random
+import numpy as np
 from visualizations import visualize_reconstructions,visualize_latent_space
 
+def set_seed(seed: Optional[int] = 42) -> None:
+    """
+    Set all random seeds for reproducibility.
+    
+    Args:
+        seed: Integer seed for reproducibility. If None, seeds are not set.
+    """
+    if seed is not None:
+        # Python random
+        random.seed(seed)
+        
+        # Numpy
+        np.random.seed(seed)
+        
+        # PyTorch
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+        
+        # Set CUDA backend to deterministic mode
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
+        
+        # Set Python hash seed
+        os.environ['PYTHONHASHSEED'] = str(seed)
+        
+        print(f"Random seed set to {seed} for reproducibility")
+        
 
 def main():
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     
+    set_seed(111)
     # Setup data
     data_module = MNISTDataModule(
-        batch_size=128,
+        batch_size=256,
         train_val_split=0.9
     )
     data_module.prepare_data()
@@ -26,15 +57,16 @@ def main():
     train_loader = data_module.train_dataloader()
     images, _ = next(iter(train_loader))
 
-    print(f"Data range: [{images.min():.3f}, {images.max():.3f}]")  # Should be [0, 1]
-
+   
     # Create model
     model = VAE(
         input_shape=(28, 28, 1),
         conv_filters=(32, 64, 64, 64),
         conv_kernels=(3, 3, 3, 3),
         conv_strides=(1, 2, 2, 1),
-        latent_dim=2
+        latent_dim=2,
+        dropout_rate=0.2,
+        seed=42
     ).to(device)
     
     # Setup optimizer
@@ -60,29 +92,7 @@ def main():
     history = trainer.train(
         train_loader=data_module.train_dataloader(),
         val_loader=data_module.val_dataloader(),
-        num_epochs=50
-    )
-    
-    return history
-
-
-if __name__ == '__main__':
-    # Load history
-    history = main()
-
-    
-    data_module = MNISTDataModule(batch_size=128)
-    data_module.prepare_data()
-    data_module.setup()
-
-    model = VAE(...).to(device)
-    optimizer = optim.Adam(model.parameters())
-
-    trainer = VAETrainer(model, optimizer, device)
-    history = trainer.train(
-        data_module.train_dataloader(),
-        data_module.val_dataloader(),
-        num_epochs=50
+        num_epochs=100
     )
     
     # Get the validation loader
@@ -102,3 +112,11 @@ if __name__ == '__main__':
     # Visualize latent space
     print("\nValidation Set Latent Space:")
     visualize_latent_space(model, test_loader, device,display=True)
+    return history
+
+
+if __name__ == '__main__':
+    # Load history
+    history = main()
+
+    
