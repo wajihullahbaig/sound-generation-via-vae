@@ -229,16 +229,21 @@ class VAE(nn.Module):
         Forward pass through VAE.
         
         Args:
-            x: Input tensor of shape (batch_size, channels, height, width)
+            x: Input tensor of shape (batch_size, height, width, channels)
             
         Returns:
-            reconstruction: Reconstructed input
+            reconstruction: Reconstructed input with same shape as input
             mu: Mean of latent space
             log_var: Log variance of latent space
         """
         mu, log_var = self.encoder(x)
         z = self.reparameterize(mu, log_var)
         reconstruction = self.decoder(z)
+        
+        # Convert reconstruction from BCHW to BHWC if input was BHWC
+        if x.size(1) != self.input_shape[2]:  # If input was BHWC
+            reconstruction = reconstruction.permute(0, 2, 3, 1)
+            
         return reconstruction, mu, log_var
     
     def summary(self, batch_size: int = 32) -> None:
