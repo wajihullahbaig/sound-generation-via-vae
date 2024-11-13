@@ -3,6 +3,7 @@ import torch.nn as nn
 import numpy as np
 from typing import List, Tuple, Optional
 from torchinfo import summary
+from noise import AddNoise
 
 class Encoder(nn.Module):
     def __init__(self, 
@@ -194,12 +195,17 @@ class VAE(nn.Module):
                  conv_strides: List[int],
                  latent_dim: int,
                  dropout_rate: float = 0.2,
-                 seed = 42
+                 noise_factor: float = 0.0,  
+                 seed: int = 42
                  ): 
         super().__init__()
         
         self.input_shape = input_shape
         self.latent_dim = latent_dim
+        self.seed = seed
+        
+        # Initialize the noise transform
+        self.noise_transform = AddNoise(noise_factor)
         
         # Build encoder and decoder with dropout
         self.encoder = Encoder(
@@ -210,19 +216,49 @@ class VAE(nn.Module):
             input_shape, conv_filters, conv_kernels, 
             conv_strides, latent_dim, dropout_rate
         )
+        
+        # Initialize weights
+        self.apply(self._init_weights)
     
     def reparameterize(self, mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
         std = torch.exp(0.5 * log_var)
         eps = torch.randn_like(std)
         return mu + eps * std
     
-    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        mu, log_var = self.encoder(x)
+    def forward(self, x: torch.Tensor) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor, Optional[torch.Tensor]]:
+        """
+        Forward pass with optional denoising.
+        Returns:
+            - reconstruction: reconstructed clean image
+            - mu: mean of latent distribution
+            - log_var: log variance of latent distribution
+            - noisy_x: noisy version of input (if noise_factor > 0)
+        """
+        # Store original input for loss calculation
+        original_x = x
+        
+        # Apply noise transformation
+        noisy_x = self.noise_transform(x)
+        
+        # If no noise was added, set noisy_x to None for clarity
+        if self.noise_transform.noise_factor <= 0.0:
+            noisy_x = None
+            x_for_encoder = original_x
+        else:
+            x_for_encoder = noisy_x
+            
+        # Regular VAE forward pass
+        mu, log_var = self.encoder(x_for_encoder)
         z = self.reparameterize(mu, log_var)
         reconstruction = self.decoder(z)
-        if x.size(1) != self.input_shape[2]:
+        
+        # Handle permutation if needed
+        if original_x.size(1) != self.input_shape[2]:
             reconstruction = reconstruction.permute(0, 2, 3, 1)
-        return reconstruction, mu, log_var
+            if noisy_x is not None:
+                noisy_x = noisy_x.permute(0, 2, 3, 1)
+        
+        return reconstruction, mu, log_var, noisy_x
     
     def _init_weights(self, m):
         """Initialize model weights with Xavier initialization."""
@@ -238,26 +274,14 @@ class VAE(nn.Module):
         self.encoder.summary(batch_size)
         self.decoder.summary(batch_size)
         print(f"\nLatent dimension: {self.latent_dim}")
+        print(f"Noise factor: {self.noise_transform.noise_factor}")
 
-
-if __name__ == "__main__":
-    # Example usage
-    vae = VAE(
-        input_shape=(28, 28, 1),
-        conv_filters=(32, 64, 64, 64),
-        conv_kernels=(3, 3, 3, 3),
-        conv_strides=(1, 2, 2, 1),
-        latent_dim=2
-    )
+    @property
+    def noise_factor(self) -> float:
+        """Get current noise factor."""
+        return self.noise_transform.noise_factor
     
-    # Print model summary
-    vae.summary()
-    
-    # Test forward pass
-    x = torch.randn(32, 28, 28, 1)  # Example batch of 32 images
-    recon, mu, log_var = vae(x)
-    print("\nOutput shapes:")
-    print(f"Input shape: {x.shape}")
-    print(f"Reconstruction shape: {recon.shape}")
-    print(f"Latent mean shape: {mu.shape}")
-    print(f"Latent log variance shape: {log_var.shape}")
+    @noise_factor.setter
+    def noise_factor(self, value: float):
+        """Set noise factor."""
+        self.noise_transform.noise_factor = value

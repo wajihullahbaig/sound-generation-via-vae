@@ -23,7 +23,7 @@ def visualize_reconstructions(model, data_loader, device, num_images=8,
     with torch.no_grad():
         images, _ = next(iter(data_loader))
         images = images[:num_images].to(device)
-        reconstructions, _, _ = model(images)
+        reconstructions, _, _,_ = model(images)
         
         # Create figure
         fig, axes = plt.subplots(2, num_images, figsize=(2*num_images, 4))

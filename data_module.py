@@ -1,12 +1,13 @@
 import torch
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader, Subset
 from torchvision import datasets, transforms
 from pathlib import Path
-from typing import Tuple, Dict
-
+from typing import Tuple, Dict, List
+import numpy as np
+from sklearn.model_selection import StratifiedShuffleSplit
 
 class MNISTDataModule:
-    """Handles MNIST dataset loading and preprocessing."""
+    """Handles MNIST dataset loading and preprocessing with balanced class distribution."""
     
     def __init__(self, data_dir: str = './data', 
                  batch_size: int = 32,
@@ -41,8 +42,69 @@ class MNISTDataModule:
         datasets.MNIST(self.data_dir, train=True, download=True)
         datasets.MNIST(self.data_dir, train=False, download=True)
     
+    def _create_balanced_split(self, dataset, split_ratio: float) -> Tuple[Subset, Subset]:
+        """
+        Create a balanced split of the dataset using stratified sampling.
+        
+        Args:
+            dataset: The full dataset to split
+            split_ratio: Fraction of data to use for first split
+            
+        Returns:
+            Tuple of (first_split, second_split) as torch Subsets
+        """
+        # Get all targets
+        if isinstance(dataset, Subset):
+            # If dataset is already a Subset, get targets from the underlying dataset
+            targets = [dataset.dataset.targets[i] for i in dataset.indices]
+        else:
+            targets = dataset.targets
+            
+        # Convert targets to numpy array if they're in tensor format
+        if torch.is_tensor(targets):
+            targets = targets.numpy()
+        elif isinstance(targets, list):
+            targets = np.array(targets)
+            
+        # Create stratified split
+        splitter = StratifiedShuffleSplit(
+            n_splits=1,
+            train_size=split_ratio,
+            random_state=42
+        )
+        
+        # Get indices for both splits
+        train_idx, val_idx = next(splitter.split(np.zeros(len(targets)), targets))
+        
+        # Create Subset objects
+        first_split = Subset(dataset, train_idx)
+        second_split = Subset(dataset, val_idx)
+        
+        return first_split, second_split
+    
+    def get_class_distribution(self, dataset) -> Dict[int, int]:
+        """
+        Get the distribution of classes in a dataset.
+        
+        Args:
+            dataset: Dataset to analyze
+            
+        Returns:
+            Dictionary mapping class indices to counts
+        """
+        if isinstance(dataset, Subset):
+            targets = [dataset.dataset.targets[i] for i in dataset.indices]
+        else:
+            targets = dataset.targets
+            
+        if torch.is_tensor(targets):
+            targets = targets.numpy()
+            
+        unique, counts = np.unique(targets, return_counts=True)
+        return dict(zip(unique, counts))
+    
     def setup(self) -> None:
-        """Setup train, validation and test datasets."""
+        """Setup train, validation and test datasets with balanced class distribution."""
         # Load full training set
         full_train = datasets.MNIST(
             self.data_dir,
@@ -50,15 +112,10 @@ class MNISTDataModule:
             transform=self.transform
         )
         
-        # Calculate split sizes
-        train_size = int(len(full_train) * self.train_val_split)
-        val_size = len(full_train) - train_size
-        
-        # Split training set
-        self.train_dataset, self.val_dataset = random_split(
+        # Create balanced split
+        self.train_dataset, self.val_dataset = self._create_balanced_split(
             full_train, 
-            [train_size, val_size],
-            generator=torch.Generator().manual_seed(42)
+            self.train_val_split
         )
         
         # Load test set
@@ -67,6 +124,12 @@ class MNISTDataModule:
             train=False,
             transform=self.transform
         )
+        
+        # Print class distribution for verification
+        print("Class distribution in splits:")
+        print("Training set:", self.get_class_distribution(self.train_dataset))
+        print("Validation set:", self.get_class_distribution(self.val_dataset))
+        print("Test set:", self.get_class_distribution(self.test_dataset))
     
     def train_dataloader(self) -> DataLoader:
         return DataLoader(
@@ -94,7 +157,3 @@ class MNISTDataModule:
             num_workers=self.num_workers,
             pin_memory=self.pin_memory
         )
-
-
-
-

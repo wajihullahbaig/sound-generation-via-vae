@@ -11,7 +11,7 @@ import json
 from visualizations import visualize_reconstructions
 
 
-
+    
 class VAETrainer:
     """Handles training of the VAE model."""
     
@@ -114,8 +114,9 @@ class VAETrainer:
                 # Zero gradients
                 self.optimizer.zero_grad()
                 
-                # Forward pass
-                recon_x, mu, log_var = self.model(data)
+                # Forward pass - noisy_x will be none if VAE was constructed with noise_factor = 0.0
+                recon_x, mu, log_var, noisey_x = self.model(data)
+                
                 
                 # Compute loss
                 loss, metrics = self.compute_loss(recon_x, data, mu, log_var)
@@ -160,7 +161,8 @@ class VAETrainer:
         with torch.no_grad():
             for data, _ in val_loader:
                 data = data.to(self.device)
-                recon_x, mu, log_var = self.model(data)
+                # noisey_x will be None if VAE was constructed with noise_factor == 0.0
+                recon_x, mu, log_var, noisey_x = self.model(data)
                 loss, metrics = self.compute_loss(recon_x, data, mu, log_var)
                 
                 for k, v in metrics.items():

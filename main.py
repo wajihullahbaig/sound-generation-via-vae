@@ -47,7 +47,7 @@ def main():
     set_seed(111)
     # Setup data
     data_module = MNISTDataModule(
-        batch_size=256,
+        batch_size=64,
         train_val_split=0.9
     )
     data_module.prepare_data()
@@ -55,22 +55,22 @@ def main():
     
         # Get a batch
     train_loader = data_module.train_dataloader()
-    images, _ = next(iter(train_loader))
-
    
-    # Create model
+    # Create model - set noise_factor > 0.0 to make VAE a DVAE
     model = VAE(
         input_shape=(28, 28, 1),
         conv_filters=(32, 64, 64, 64),
         conv_kernels=(3, 3, 3, 3),
         conv_strides=(1, 2, 2, 1),
-        latent_dim=2,
-        dropout_rate=0.2,
+        latent_dim=32,
+        dropout_rate=0.1,
+        noise_factor=0.2,
         seed=42
     ).to(device)
     
+    print(model.summary(batch_size=256 ))
     # Setup optimizer
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = optim.Adam(model.parameters(), lr=1e-4)
     # Setup learning rate scheduler
     scheduler = ReduceLROnPlateau(
         optimizer,
@@ -85,7 +85,8 @@ def main():
         optimizer=optimizer,
         device=device,
         save_dir='./checkpoints',
-        model_name=f'vae_mnist_{datetime.now().strftime("%Y%m%d_%H%M%S")}'
+        model_name=f'vae_mnist_{datetime.now().strftime("%Y%m%d_%H%M%S")}',
+        scheduler=scheduler
     )
     
     # Train model
