@@ -1,7 +1,7 @@
 
 from datetime import datetime
 import os
-from data_module import MNISTDataModule
+from mnist_data_module import MNISTDataModule
 from trainer import VAETrainer
 import torch
 from auto_encoder import VAE
@@ -39,19 +39,11 @@ def set_seed(seed: Optional[int] = 42) -> None:
         
         print(f"Random seed set to {seed} for reproducibility")
         
-def test():
+def test(test_loader):
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')    
-    set_seed(111)
-    # Setup data
-    data_module = MNISTDataModule(
-        batch_size=8,
-        train_val_split=0.9
-    )
-    data_module.prepare_data()
-    data_module.setup()
-    # Get the validation loader
-    test_loader = data_module.test_dataloader()
+    set_seed(111)   
+    
     # Create model - set noise_factor > 0.0 to make VAE a DVAE
     model = VAE(
         input_shape=(28, 28, 1),
@@ -92,8 +84,10 @@ def main():
     data_module.prepare_data()
     data_module.setup()
     
-        # Get a batch
+    # Get dataloaders
     train_loader = data_module.train_dataloader()
+    val_loader = data_module.val_dataloader()
+    test_loader = data_module.test_dataloader()
    
     # Create model - set noise_factor > 0.0 to make VAE a DVAE
     model = VAE(
@@ -130,18 +124,18 @@ def main():
     
     # Train model
     history = trainer.train(
-        train_loader=data_module.train_dataloader(),
-        val_loader=data_module.val_dataloader(),
+        train_loader=train_loader,
+        val_loader=val_loader,
         num_epochs=100
     )
     
    
-    return history
+    return history,test_loader
 
 
 if __name__ == '__main__':
     # Load history
-    #history = main()
-    test()
+    history,test_loader = main()
+    test(test_loader)
 
     
