@@ -9,3 +9,5 @@ the latent space. Our simplest choice is a VAE
 
 
 ![VAE Diagram](vae.png)
+
+![Free Spoken Audio Dataset](https://github.com/Jakobovski/free-spoken-digit-dataset)

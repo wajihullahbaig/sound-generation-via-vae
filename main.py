@@ -39,7 +39,46 @@ def set_seed(seed: Optional[int] = 42) -> None:
         
         print(f"Random seed set to {seed} for reproducibility")
         
+def test():
+    # Set device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')    
+    set_seed(111)
+    # Setup data
+    data_module = MNISTDataModule(
+        batch_size=8,
+        train_val_split=0.9
+    )
+    data_module.prepare_data()
+    data_module.setup()
+    # Get the validation loader
+    test_loader = data_module.test_dataloader()
+    # Create model - set noise_factor > 0.0 to make VAE a DVAE
+    model = VAE(
+        input_shape=(28, 28, 1),
+        conv_filters=(32, 64, 64, 64),
+        conv_kernels=(3, 3, 3, 3),
+        conv_strides=(1, 2, 2, 1),
+        latent_dim=32,
+        dropout_rate=0.1,
+        noise_factor=0.2,
+        seed=42
+    ).to(device)
+    
+    # If you have a saved model, load it
+    checkpoint = torch.load('./checkpoints/vae_mnist_20241113_091742_best.pt')
+    model.load_state_dict(checkpoint['model_state_dict'])
 
+    # Set model to evaluation mode
+    model.eval()
+
+    # Visualize reconstructions
+    print("Validation Set Reconstructions:")
+    visualize_reconstructions(model, test_loader, device, num_images=8,display=True)
+
+    # Visualize latent space
+    print("\nValidation Set Latent Space:")
+    visualize_latent_space(model, test_loader, device,display=True)
+    
 def main():
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -96,28 +135,13 @@ def main():
         num_epochs=100
     )
     
-    # Get the validation loader
-    test_loader = data_module.test_dataloader()
-
-    # If you have a saved model, load it
-    checkpoint = torch.load('vae_mnist_20241112_120030_best.pt')
-    model.load_state_dict(checkpoint['model_state_dict'])
-
-    # Set model to evaluation mode
-    model.eval()
-
-    # Visualize reconstructions
-    print("Validation Set Reconstructions:")
-    visualize_reconstructions(model, test_loader, device, num_images=8,display=True)
-
-    # Visualize latent space
-    print("\nValidation Set Latent Space:")
-    visualize_latent_space(model, test_loader, device,display=True)
+   
     return history
 
 
 if __name__ == '__main__':
     # Load history
-    history = main()
+    #history = main()
+    test()
 
     
