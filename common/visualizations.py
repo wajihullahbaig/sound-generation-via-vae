@@ -6,10 +6,26 @@ from sklearn.decomposition import PCA
 import numpy as np
 from typing import Optional
 
-def visualize_reconstructions(model, data_loader, device, num_images=8, 
-                            display=True, save_path=None):
+import torch
+import matplotlib.pyplot as plt
+from pathlib import Path
+from datetime import datetime
+import numpy as np
+
+def visualize_reconstructions(
+    model, 
+    data_loader, 
+    device, 
+    num_images=8,
+    display=True, 
+    save_path=None,
+    color_mode='auto',
+    spectrogram_mode=False,
+    cmap='viridis',
+    fig_size_multiplier=(2, 4)
+):
     """
-    Visualize or save original and reconstructed images.
+    Visualize or save original and reconstructed images with enhanced color support.
     
     Args:
         model: VAE model
@@ -18,6 +34,10 @@ def visualize_reconstructions(model, data_loader, device, num_images=8,
         num_images: Number of images to visualize
         display: If True, displays the plot. If False, saves to disk
         save_path: Directory to save the visualization. If None, uses '/viz_outputs'
+        color_mode: 'auto', 'color', or 'grayscale'. 'auto' determines from input shape
+        spectrogram_mode: If True, applies spectrogram-specific visualization settings
+        cmap: Colormap for visualization (e.g., 'viridis', 'magma', 'gray')
+        fig_size_multiplier: Tuple of (width, height) multipliers for figure size
     """
     model.eval()
     save_path = Path(save_path) if save_path else Path('/viz_outputs')
@@ -26,27 +46,76 @@ def visualize_reconstructions(model, data_loader, device, num_images=8,
     with torch.no_grad():
         images, _ = next(iter(data_loader))
         images = images[:num_images].to(device)
-        reconstructions, _, _,_ = model(images)
+        reconstructions, _, _, _ = model(images)
         
-        # Create figure
-        fig, axes = plt.subplots(2, num_images, figsize=(2*num_images, 4))
+        # Determine if images are color based on shape or color_mode
+        is_color = (color_mode == 'color' or 
+                   (color_mode == 'auto' and images.shape[1] == 3))
+        
+        # Create figure with appropriate size
+        fig_width = fig_size_multiplier[0] * num_images
+        fig_height = fig_size_multiplier[1]
+        fig, axes = plt.subplots(2, num_images, figsize=(fig_width, fig_height))
+        
+        # Normalize function for better visualization
+        def normalize_for_display(tensor):
+            tensor_np = tensor.cpu().numpy()
+            if spectrogram_mode:
+                # For spectrograms, often better to use log scale
+                tensor_np = np.log(tensor_np + 1e-9)
+            return tensor_np
+
+        # Visualization loop
         for i in range(num_images):
-            axes[0,i].imshow(images[i].cpu().squeeze(), cmap='gray')
+            # Original images
+            img_orig = images[i].cpu()
+            if is_color:
+                # Handle color images (C,H,W) -> (H,W,C)
+                img_orig = img_orig.permute(1, 2, 0)
+                img_recon = reconstructions[i].cpu().permute(1, 2, 0)
+                
+                # Ensure values are in valid range
+                img_orig = torch.clamp(img_orig, 0, 1)
+                img_recon = torch.clamp(img_recon, 0, 1)
+                
+                axes[0,i].imshow(img_orig)
+                axes[1,i].imshow(img_recon)
+            else:
+                # Handle grayscale images
+                img_orig = normalize_for_display(img_orig.squeeze())
+                img_recon = normalize_for_display(reconstructions[i].squeeze())
+                
+                axes[0,i].imshow(img_orig, cmap=cmap)
+                axes[1,i].imshow(img_recon, cmap=cmap)
+            
+            # Turn off axes for cleaner look
             axes[0,i].axis('off')
-            axes[1,i].imshow(reconstructions[i].cpu().squeeze(), cmap='gray')
             axes[1,i].axis('off')
+            
+            # Add colorbar if in spectrogram mode
+            if spectrogram_mode:
+                plt.colorbar(axes[0,i].images[0], ax=axes[0,i], fraction=0.046, pad=0.04)
+                plt.colorbar(axes[1,i].images[0], ax=axes[1,i], fraction=0.046, pad=0.04)
+        
+        # Add row labels
+        axes[0,0].set_ylabel('Original', size='large')
+        axes[1,0].set_ylabel('Reconstructed', size='large')
         
         plt.tight_layout()
         
         if display:
             plt.show()
         else:
-            # Generate filename with timestamp
+            # Generate filename with timestamp and relevant info
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f'reconstructions_{timestamp}.png'
-            fig.savefig(save_path / filename)
+            mode = 'spec' if spectrogram_mode else 'img'
+            color_info = 'color' if is_color else 'gray'
+            filename = f'reconstructions_{mode}_{color_info}_{timestamp}.png'
+            
+            fig.savefig(save_path / filename, dpi=300, bbox_inches='tight')
             plt.close(fig)
             print(f"Saved reconstructions to {save_path / filename}")
+
 
 def visualize_latent_space(model, 
                           data_loader, 

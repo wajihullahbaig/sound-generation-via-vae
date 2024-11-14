@@ -63,6 +63,7 @@ class SpectrogramPreprocessor:
         )
         
         self.amplitude_to_db = T.AmplitudeToDB(top_db=80)
+        self.min_max_values = {}
         
     
     def process_audio_file(self, audio_path: str) -> torch.Tensor:
@@ -126,15 +127,15 @@ class SpectrogramPreprocessor:
                 np.save(save_path, mel_spec.numpy())
                 
                 # Store min/max values
-                #self.min_max_values[str(save_path)] = {
-                #    "min": spec_min,
-                #    "max": spec_max
-                #}
+                self.min_max_values[str(save_path)] = {
+                   "min": spec_min,
+                    "max": spec_max
+                }
                 
                 print(f"Processed and saved: {save_path}")
             
             # Save min/max values
-           # with open(save_dir / "min_max_values.pkl", "wb") as f:
-           #     pickle.dump(self.min_max_values, f)
+            with open(save_dir / "min_max_values.pkl", "wb") as f:
+                pickle.dump(self.min_max_values, f)
 
 
