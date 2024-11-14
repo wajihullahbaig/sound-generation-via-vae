@@ -64,12 +64,8 @@ class SoundGenerator:
         return torch.pow(10.0, db_spec / 20.0)
     
     def griffin_lim(self, mel_spectrograms, n_iter=100):
-        """
-        Griffin-Lim algorithm with mel to linear conversion
-        """
         device = mel_spectrograms.device
         
-        # Get mel basis and its inverse
         mel_basis = librosa.filters.mel(
             sr=22050,
             n_fft=self.n_fft,
@@ -84,9 +80,9 @@ class SoundGenerator:
             device=device
         )
         
-        # Now proceed with Griffin-Lim on linear spectrogram
-        angles = torch.exp(1j * torch.randn_like(linear_spec))
-    
+        # Initialize phase with better estimate
+        angles = torch.exp(1j * torch.angle(linear_spec + 1e-9))
+        
         for _ in range(n_iter):
             full_spec = linear_spec * angles
             inverse = torch.istft(
@@ -113,41 +109,36 @@ class SoundGenerator:
             normalized=True,
             return_complex=False
         )
-        
+              
         return signal
     
     def convert_spectrograms_to_audio(self, spectrograms, min_max_values):
         signals = []
         
-        # Convert numpy arrays to torch tensors if needed
         if not isinstance(spectrograms, torch.Tensor):
             spectrograms = torch.from_numpy(spectrograms)
         
-        # Move to the same device as the model
-        device = next(self.vae.parameters()).device
-        spectrograms = spectrograms.to(device)
+        spectrograms = spectrograms.to(self.device)
         
         for spectrogram, min_max_value in zip(spectrograms, min_max_values):
-            # reshape the log spectrogram
+            # Get spectrogram and reshape
             log_spectrogram = spectrogram[:, :, 0]
             
-            # apply denormalisation
+            # Denormalize using min/max values that were saved AFTER normalization
             denorm_log_spec = self._min_max_normaliser.denormalise(
                 log_spectrogram, 
                 min_max_value["min"], 
                 min_max_value["max"]
             )
             
-            # Convert from dB to amplitude
+            # Convert from dB to amplitude (with power compensation)
             spec = self.db_to_amplitude(denorm_log_spec)
             
-            # Apply Griffin-Lim algorithm
+            # Apply Griffin-Lim
             signal = self.griffin_lim(spec)
-            
-            # Convert to numpy for saving
             signal = signal.cpu().numpy()
             signals.append(signal)
-            
+        
         return signals
 
 def load_fsdd(spectrograms_path):

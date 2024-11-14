@@ -111,14 +111,15 @@ class SpectrogramPreprocessor:
             for audio_path in audio_files:
                 # Process audio to mel spectrogram
                 mel_spec = self.process_audio_file(str(audio_path))
-                
-                # Save min/max values before normalization
-                spec_min = mel_spec.min().item()
-                spec_max = mel_spec.max().item()
+                                
                 
                 # Normalize if configured
                 if self.config.normalize:
                     mel_spec = (mel_spec - mel_spec.mean()) / mel_spec.std()
+                
+                # Save min/max values
+                spec_min = mel_spec.min().item()
+                spec_max = mel_spec.max().item()
                 
                 # Generate save path
                 save_path = save_dir / f"{audio_path.stem}.npy"
@@ -137,5 +138,3 @@ class SpectrogramPreprocessor:
             # Save min/max values
             with open(save_dir / "min_max_values.pkl", "wb") as f:
                 pickle.dump(self.min_max_values, f)
-
-

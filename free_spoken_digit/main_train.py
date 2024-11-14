@@ -9,7 +9,7 @@ from typing import List, Tuple, Optional
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import numpy as np
 import torchvision.transforms as transforms
-from audio_preprocessor import SpectrogramPreprocessor, PreprocessingConfig
+from spectrogram_preprocessor import SpectrogramPreprocessor, PreprocessingConfig
 from spectrogram_data_module import SpectrogramDataModule
 from common.visualizations import visualize_reconstructions,visualize_latent_space
 from common.seeding import set_seed
@@ -38,9 +38,7 @@ def test(test_loader):
     print("\nValidation Set Latent Space:")
     visualize_latent_space(model, test_loader, device,display=True)
     
-def main():
-    # First create the spectrorgrams, you probably need to do this once.
-    generate_spectrograms()    
+def main():    
     
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -139,9 +137,10 @@ def generate_spectrograms():
 
 
 if __name__ == '__main__':
-    
+    # First create the spectrorgrams, you probably need to do this once.
+    #generate_spectrograms()    
     # Load history    
     history, test_loader = main()
-    test(test_loader)
+    # test(test_loader)
 
     
