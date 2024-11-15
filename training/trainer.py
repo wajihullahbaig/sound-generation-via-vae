@@ -106,8 +106,8 @@ class VAETrainer:
             metrics: Dictionary containing average losses for the epoch
         """
         self.model.train()
-        total_metrics = defaultdict(float)
-        
+        total_metrics = defaultdict(float)     
+
         with tqdm(train_loader, desc=f'Epoch {epoch}') as pbar:
             for batch_idx, (data, _) in enumerate(pbar):
                 # Move data to device

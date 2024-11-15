@@ -1,6 +1,6 @@
 import torch
 from arch.auto_encoder import VAE
-from sound_generator import SoundGenerator
+from spectrogram_processor import SpectrogramProcessor, ProcessingConfig
 from common.seeding import set_seed
 import pickle
 import os
@@ -42,9 +42,17 @@ def save_signals(signals, save_dir, sample_rate=22050):
         sf.write(save_path, signal,samplerate=22050)
 
 if __name__ == "__main__":
-    # Constants
-    N_FFT=512  # Make sure you have this correct when spectrograms were created
-    HOP_LENGTH = 256 # Make sure you have this correct when spectrograms were created
+
+    # Configure preprocessing - Ensure you have correct configuratiosn
+    processing_config_128X128_mels = ProcessingConfig(
+        sample_rate=22050,
+        duration=0.74,
+        n_fft=2048,
+        hop_length=128,
+        n_mels=128,
+    )
+    
+    processor = SpectrogramProcessor(processing_config_128X128_mels)
     SAVE_DIR_ORIGINAL = "free_spoken_digit/samples/original/"
     SAVE_DIR_GENERATED = "free_spoken_digit/samples/generated/"
     SPECTROGRAMS_PATH = "C:/Users/Acer/work/data/free-audio-spectrogram"

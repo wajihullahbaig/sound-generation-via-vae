@@ -9,7 +9,7 @@ from typing import List, Tuple, Optional
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import numpy as np
 import torchvision.transforms as transforms
-from spectrogram_preprocessor import SpectrogramPreprocessor, PreprocessingConfig
+from spectrogram_processor import SpectrogramProcessor, ProcessingConfig
 from spectrogram_data_module import SpectrogramDataModule
 from common.visualizations import visualize_reconstructions,visualize_latent_space
 from common.seeding import set_seed
@@ -42,7 +42,7 @@ def main():
     
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    batch_size = 8
+    batch_size = 32
     set_seed(111)
     data_module = SpectrogramDataModule(
     data_dir="C:/Users/Acer/work/data/free-audio-spectrogram",
@@ -61,27 +61,16 @@ def main():
              
     # Create model - set noise_factor > 0.0 to make VAE a DVAE
     model = VAE(
-        input_shape=(64, 64, 1),
-        conv_filters=(64, 32,16),
+        input_shape=(128, 128, 1),
+        conv_filters=(128, 96,64),
         conv_kernels=(3, 3, 3),
         conv_strides=(1, 2, 2),
-        latent_dim=16,
-        dropout_rate=0.1,
-        noise_factor=0.2,
+        latent_dim=32,
+        dropout_rate=0.2,
+        noise_factor=0.1,
         seed=42
     ).to(device)
     
-    # Create model - set noise_factor > 0.0 to make VAE a DVAE
-    #model = VAE(
-    #    input_shape=(256, 64, 1),
-    #    conv_filters=(512, 256,128, 32),
-    #    conv_kernels=(3, 3, 3, 3),
-    #    conv_strides=(1, 2, 2, 1),
-    #    latent_dim=32,
-    #    dropout_rate=0.1,
-    #    noise_factor=0.0,
-    #    seed=42
-    #).to(device)
     
     print(model.summary(batch_size=batch_size ))
     # Setup optimizer
@@ -120,17 +109,16 @@ def generate_spectrograms():
     Generate spectrograms from audio files.
     """
     # Configure preprocessing
-    preprocess_config = PreprocessingConfig(
+    processing_config_128X128_mels = ProcessingConfig(
         sample_rate=22050,
         duration=0.74,
-        n_fft=512,
-        hop_length=256,
-        n_mels=64,
-        normalize=True
+        n_fft=2048,
+        hop_length=128,
+        n_mels=128,
     )
     
-    preprocessor = SpectrogramPreprocessor(preprocess_config)
-    preprocessor.process_and_save(
+    processor = SpectrogramProcessor(processing_config_128X128_mels)
+    processor.create_spectrograms_and_save(
         audio_dir="C:/Users/Acer/work/git/free-spoken-digit-dataset/recordings",
         save_dir="C:/Users/Acer/work/data/free-audio-spectrogram",
     )
@@ -138,7 +126,7 @@ def generate_spectrograms():
 
 if __name__ == '__main__':
     # First create the spectrorgrams, you probably need to do this once.
-    #generate_spectrograms()    
+    generate_spectrograms()    
     # Load history    
     history, test_loader = main()
     # test(test_loader)

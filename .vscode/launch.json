@@ -8,7 +8,7 @@
             "name": "Training debugger",
             "type": "debugpy",
             "request": "launch",
-            "program": "test_mel_reconstruction.py",            
+            "program": "free_spoken_digit/main_train.py",            
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
             "env": {
