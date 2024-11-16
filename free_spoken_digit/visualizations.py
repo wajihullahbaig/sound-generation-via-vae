@@ -7,8 +7,42 @@ from pathlib import Path
 from typing import Optional, Union, List
 import seaborn as sns
 
+
+def plot_spectrogram_tensor_or_array(
+    spec: Union[torch.Tensor, np.ndarray],
+    sr : int = 22050,
+    hop_length : int = 128,
+    figsize: tuple = (10, 4),
+    save_path: Optional[str] = None
+) -> None:
+    """Plot a single spectrogram from Tensor or numpy array."""
+    if isinstance(spec, torch.Tensor):
+        spec = spec.numpy()
+        
+    plt.figure(figsize=figsize)
+    librosa.display.specshow(
+        spec[0] if spec.ndim == 3 else spec,
+        y_axis='mel',
+        x_axis='time',
+        sr=sr,  
+        hop_length=hop_length 
+    )
+    plt.colorbar(format='%+2.0f dB')
+    if save_path:
+        plt.title(f'Mel Spectrogram: {Path(spec_path).stem}')
+    
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        plt.close()
+    else:
+        plt.draw()
+        plt.pause(0.01)  # Short pause to update the plot        
+        plt.show()
+
 def plot_spectrogram(
     spec_path: Union[str, Path],
+    sr : int = 22050,
+    hop_length : int = 128,
     figsize: tuple = (10, 4),
     save_path: Optional[str] = None
 ) -> None:
@@ -23,8 +57,8 @@ def plot_spectrogram(
         spec[0] if spec.ndim == 3 else spec,
         y_axis='mel',
         x_axis='time',
-        sr=22050,  # Default sample rate
-        hop_length=256  # Default hop length
+        sr=sr,  
+        hop_length=hop_length 
     )
     plt.colorbar(format='%+2.0f dB')
     plt.title(f'Mel Spectrogram: {Path(spec_path).stem}')
@@ -33,11 +67,15 @@ def plot_spectrogram(
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
     else:
+        plt.draw()
+        plt.pause(0.01)  # Short pause to update the plot        
         plt.show()
 
 def plot_batch_spectrograms(
     specs: Union[torch.Tensor, np.ndarray],
     num_examples: int = 4,
+    sr = 22050,
+    hop_length = 128,
     figsize: tuple = (15, 3),
     save_path: Optional[str] = None,
     titles: Optional[List[str]] = None
@@ -54,12 +92,18 @@ def plot_batch_spectrograms(
     
     for i in range(num_examples):
         spec = specs[i]
+        # Ensure spec is 2D by squeezing or selecting the appropriate slice
+        if spec.ndim == 3:
+            spec = np.squeeze(spec)  # Remove singleton dimensions
+        if spec.ndim != 2:
+            raise ValueError(f"Unexpected spectrogram shape: {spec.shape}")
+        
         img = librosa.display.specshow(
             spec,
             y_axis='mel',
             x_axis='time',
-            sr=22050,  # Default sample rate
-            hop_length=256,  # Default hop length
+            sr=sr, 
+            hop_length=hop_length,
             ax=axes[i]
         )
         title = f'Sample {i+1}' if titles is None else titles[i]
@@ -72,6 +116,8 @@ def plot_batch_spectrograms(
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
         plt.close()
     else:
+        plt.draw()
+        plt.pause(0.01)  # Short pause to update the plot
         plt.show()
 
 def compare_spectrograms(

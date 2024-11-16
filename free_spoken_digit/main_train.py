@@ -42,7 +42,7 @@ def main():
     
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    batch_size = 32
+    batch_size = 16
     set_seed(111)
     data_module = SpectrogramDataModule(
     data_dir="C:/Users/Acer/work/data/free-audio-spectrogram",
@@ -126,7 +126,7 @@ def generate_spectrograms():
 
 if __name__ == '__main__':
     # First create the spectrorgrams, you probably need to do this once.
-    generate_spectrograms()    
+    # generate_spectrograms()    
     # Load history    
     history, test_loader = main()
     # test(test_loader)

@@ -9,6 +9,7 @@ from collections import defaultdict
 from tqdm import tqdm
 import json
 from common.visualizations import visualize_reconstructions
+from visualizations import plot_batch_spectrograms
 
 
     
@@ -74,7 +75,7 @@ class VAETrainer:
             recon_x.view(-1), 
             x.view(-1)
         )
-        
+                
         # KL divergence loss
         kl_loss = -0.5 * torch.sum(
             1 + log_var - mu.pow(2) - log_var.exp()
@@ -118,8 +119,7 @@ class VAETrainer:
                 
                 # Forward pass - noisy_x will be none if VAE was constructed with noise_factor = 0.0
                 recon_x, mu, log_var, noisey_x = self.model(data)
-                
-                
+                                
                 # Compute loss
                 loss, metrics = self.compute_loss(recon_x, data, mu, log_var)
                 
@@ -260,6 +260,7 @@ class VAETrainer:
             # Optional: Visualize reconstructions every N epochs
             if epoch % 5 == 0 and self.reconstruction_save_dir:
                 visualize_reconstructions(self.model, val_loader, self.device, display=False,save_path=self.reconstruction_save_dir)
+            visualize_reconstructions(self.model, val_loader, self.device, display=False,save_path=self.reconstruction_save_dir)    
         
         
         return dict(history)

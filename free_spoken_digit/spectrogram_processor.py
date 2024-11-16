@@ -55,6 +55,18 @@ class SpectrogramProcessor:
         # Storage for min max values per audio file. We will use this in reconstruction of audio
         self.min_max_values = {}
         
+        self.inverse_mel_scale_transform = torchaudio.transforms.InverseMelScale(
+            n_stft=self.config.n_fft // 2 + 1,
+            n_mels=self.config.n_mels,
+            sample_rate=self.config.sample_rate
+        )
+
+        self.griffin_lim_transform = torchaudio.transforms.GriffinLim(
+            n_fft=self.config.n_fft,
+            hop_length=self.config.hop_length,
+            n_iter=100
+        )
+        
     def _show_spectrogram(self,S_db):        
         plt.figure(figsize=(12, 8))
         plt.imshow(S_db[0].numpy(), aspect='auto', origin='lower', interpolation='nearest')
@@ -65,31 +77,21 @@ class SpectrogramProcessor:
         plt.tight_layout()
         plt.show()
     
-    def create_audio_from_spectrogram(self, spectrogram: torch.Tensor, min_val: float, max_val: float) -> torch.Tensor:                
-        # First, we need to convert back from dB to power
-        S_reverse = torch.exp(S_db * 0.11512925464970229)  # 10^(x/10) = e^(x * ln(10)/10)
+    def create_audio_from_spectrogram(self, S_db: torch.Tensor, min_val: float, max_val: float) -> torch.Tensor:                
+        # First we have De-normalize the signal. The order in which
+        # we reconstruction the audio is important. 
+        spectrogram_denormalized = S_db * (max_val - min_val) + min_val
+        
+        
+        # Second, we need to convert back from dB to power
+        S_reverse = torch.exp(spectrogram_denormalized * 0.11512925464970229)  # 10^(x/10) = e^(x * ln(10)/10)
 
         # Now we can invert the mel spectrogram
-        inverse_mel_scale = torchaudio.transforms.InverseMelScale(
-            n_stft=n_fft // 2 + 1,
-            n_mels=n_mels,
-            sample_rate=sr
-        )
-
-        griffin_lim = torchaudio.transforms.GriffinLim(
-            n_fft=n_fft,
-            hop_length=hop_length,
-            n_iter=100
-        )
-
-        y_reverse = griffin_lim(inverse_mel_scale(S_reverse))
-
-        # 6. Denormalize the reconstructed audio
-        y_reverse_denormalized = y_reverse * (waveform_max - waveform_min) + waveform_min
-
-        # 7. Enhance volume
+        y_reverse = self.griffin_lim_transform(self.inverse_mel_scale_transform(S_reverse))
+        
+        # Now we can enhance volume
         volume_enhance_factor = 2.0  # Adjust this value to increase or decrease volume
-        y_reverse_enhanced = y_reverse_denormalized * volume_enhance_factor
+        y_reverse_enhanced = y_reverse * volume_enhance_factor
 
         # Clip the enhanced audio to avoid distortion
         y_reverse_enhanced = torch.clamp(y_reverse_enhanced, -1.0, 1.0)
@@ -98,49 +100,49 @@ class SpectrogramProcessor:
             
     def create_spectrogram_from_audio(self, waveform: torch.Tensor, sr: int) -> Tuple[torch.Tensor, float,float]:
         """Process a single audio file to mel spectrogram
-            1- Find min/max for each file and store individually - we will need them at reconstruction
-            2- Do any necessary preprocessing
+            1- Do any necessary preprocessing
             2- Create the mel spectrograms
             3- Convert to decibels
+            4- Get min/max values for reconstruction - then normalize
             4- Save everything  that is needed for reconstruction and model training. 
+            
             
         """
        
-        
-        # Apply Min/Max Normalization
-        waveform_min = torch.min(waveform)
-        waveform_max = torch.max(waveform)        
-        waveform_normalized = (waveform - waveform_min) / (waveform_max - waveform_min)
-
         # Preprocessing steps 
         # Resample if necessary
         if sr != self.config.sample_rate:
             resampler = torchaudio.transforms.Resample(sr, self.config.sample_rate)
-            waveform_normalized = resampler(waveform_normalized)
+            waveform = resampler(waveform)
         
         # Convert to mono if necessary
-        if waveform_normalized.shape[0] > 1:
-            waveform_normalized = torch.mean(waveform_normalized, dim=0, keepdim=True)
+        if waveform.shape[0] > 1:
+            waveform = torch.mean(waveform, dim=0, keepdim=True)
         
         # Exact padding/trimming for precise number of samples
-        if waveform_normalized.shape[1] < self.num_samples:
-            waveform_normalized = torch.nn.functional.pad(
-                waveform_normalized, (0, self.num_samples - waveform_normalized.shape[1])
+        if waveform.shape[1] < self.num_samples:
+            waveform = torch.nn.functional.pad(
+                waveform, (0, self.num_samples - waveform.shape[1])
             )
-        elif waveform_normalized.shape[1] > self.num_samples:
-            waveform_normalized = waveform_normalized[:, :self.num_samples]
+        elif waveform.shape[1] > self.num_samples:
+            waveform = waveform[:, :self.num_samples]
         
         # Create the Mel Spectrograms
-        S = self.mel_spectrogram_transform(waveform_normalized)
+        S = self.mel_spectrogram_transform(waveform)
         # Convert to dB scale
         S_db = torchaudio.transforms.AmplitudeToDB()(S)
         if S_db.shape[1] != self.config.n_mels:
             raise ValueError(f"Expected {self.config.n_mels} mel bins, but got {S_db.shape[1]}")
         if S_db.shape[2] != self.config.n_mels:
             raise ValueError(f"Expected {self.config.n_mels} mel bins, but got {S_db.shape[2]}")
-        #self._show_spectrogram(S_db)
         
-        return S_db, waveform_min, waveform_max
+        # Get min/max, then normalize the spectrogram
+        S_min = torch.min(S_db)
+        S_max = torch.max(S_db)
+        S_normalized = (S_db - S_min) / (S_max - S_min)
+        #self._show_spectrogram(S_normalized)
+        
+        return S_normalized, S_min, S_max
 
     def create_spectrograms_and_save(self, 
                             audio_dir: str, 

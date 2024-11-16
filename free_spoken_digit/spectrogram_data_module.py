@@ -5,7 +5,7 @@ from typing import Optional, Dict, Tuple, List
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
 import torchvision.transforms as transforms
-
+from visualizations import plot_spectrogram, plot_batch_spectrograms,plot_spectrogram_tensor_or_array
 # Define transform functions outside the class
 def squeeze_tensor(x):
     """Remove extra dimension."""
@@ -26,7 +26,7 @@ class SpectrogramDataModule:
                  data_dir: str,
                  batch_size: int = 32,
                  train_val_split: float = 0.9,
-                 num_workers: int = 4,
+                 num_workers: int = 8,
                  pin_memory: bool = True):
         """
         Args:
@@ -46,7 +46,6 @@ class SpectrogramDataModule:
         self.transform = transforms.Compose([
             transforms.ToTensor(),
             transforms.Lambda(squeeze_tensor),
-            transforms.Lambda(normalize_tensor),
             transforms.Lambda(un_squeeze_tensor)
         ])
         
@@ -68,12 +67,10 @@ class SpectrogramDataModule:
         
         def __getitem__(self, idx: int) -> Tuple[torch.Tensor, int]:
             spec_path = self.file_paths[idx]
-            spec = np.load(spec_path)
+            spec = np.load(spec_path)            
             label = self._extract_label(spec_path.stem)
-            
             if self.transform:
                 spec = self.transform(spec)
-                
             return spec, label
         
         @staticmethod
@@ -155,11 +152,21 @@ class SpectrogramDataModule:
             split_ratio=self.train_val_split
         )
         
-        # Print class distribution for verification
         print("\nClass distribution in splits:")
-        print("Training set:", self.get_class_distribution(self.train_dataset))
-        print("Validation set:", self.get_class_distribution(self.val_dataset))
-        print("Test set:", self.get_class_distribution(self.test_dataset))
+        self.print_class_distribution("Training", self.get_class_distribution(self.train_dataset))
+        self.print_class_distribution("Validation", self.get_class_distribution(self.val_dataset))
+        self.print_class_distribution("Test", self.get_class_distribution(self.test_dataset))
+        
+    def print_class_distribution(self,dataset_name, distribution):
+        print("\nClass distribution in splits:")        
+        print(f"\n{dataset_name} set:")
+        print("Class | Count")
+        print("-" * 13)
+        for class_label, count in distribution.items():
+            print(f"{class_label:5d} | {count:5d}")
+        print(f"Total | {sum(distribution.values()):5d}")
+            
+        
     
     def train_dataloader(self) -> DataLoader:
         return DataLoader(
