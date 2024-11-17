@@ -260,6 +260,7 @@ class VAE(nn.Module):
         
         return reconstruction, mu, log_var, noisy_x
     
+                
     def sample(self, num_samples: int = 1, temp: float = 1.0):
         """
         Sample from the latent space and generate audio spectrograms.

@@ -1,3 +1,8 @@
 data/
 mnist/data
 __pycache__
+training/__pycache__
+arch/__pycache__
+commong/__pycache__
+free_spoken_digit/__pycache__
+mnist/__pycache__

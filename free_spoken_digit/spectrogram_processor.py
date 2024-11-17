@@ -1,7 +1,8 @@
 import torch
 import torchaudio
+from torch import device as torch_device
 from pathlib import Path
-from typing import Optional, Tuple, Dict
+from typing import Optional, Tuple, Dict, Union
 from dataclasses import dataclass
 import numpy as np
 import pickle
@@ -40,7 +41,8 @@ class ProcessingConfig:
 class SpectrogramProcessor:
     """Creates mel spectrograms with exact 256 time bins."""
     
-    def __init__(self, config: ProcessingConfig):
+    def __init__(self, config: ProcessingConfig,device:torch_device):
+        self.device = device
         self.config = config
         self.num_samples = int(config.sample_rate * config.duration)
         
@@ -80,6 +82,9 @@ class SpectrogramProcessor:
     def create_audio_from_spectrogram(self, S_db: torch.Tensor, min_val: float, max_val: float) -> torch.Tensor:                
         # First we have De-normalize the signal. The order in which
         # we reconstruction the audio is important. 
+        if S_db.dim() == 3:
+            if S_db.size(2) == 1:
+                S_db = S_db.permute(2,0,1)
         spectrogram_denormalized = S_db * (max_val - min_val) + min_val
         
         
@@ -97,6 +102,15 @@ class SpectrogramProcessor:
         y_reverse_enhanced = torch.clamp(y_reverse_enhanced, -1.0, 1.0)
 
         return y_reverse_enhanced
+    
+    def create_audio_from_spectrograms(self, S_db: list, min_max_values:list) -> torch.Tensor:                
+        signals = []
+        for spectrogram, min_max_value in zip(S_db, min_max_values):
+            spectrogram = torch.from_numpy(spectrogram).to(self.device)
+            recreated_signal = self.create_audio_from_spectrogram(spectrogram, min_max_value['min'], min_max_value['max'])
+            # append signal to "signals"
+            signals.append(recreated_signal)
+        return signals
             
     def create_spectrogram_from_audio(self, waveform: torch.Tensor, sr: int) -> Tuple[torch.Tensor, float,float]:
         """Process a single audio file to mel spectrogram

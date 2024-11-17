@@ -146,7 +146,7 @@ class VAETrainer:
         }
         
         return avg_metrics
-    
+    ''
     def validate(self, val_loader: DataLoader) -> Dict[str, float]:
         """
         Validate the model.
