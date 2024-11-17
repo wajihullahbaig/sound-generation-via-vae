@@ -42,7 +42,9 @@ def visualize_reconstructions(
     model.eval()
     save_path = Path(save_path) if save_path else Path('/viz_outputs')
     save_path.mkdir(parents=True, exist_ok=True)
-    
+    if data_loader.batch_size < num_images:
+        num_images = data_loader.batch_size
+        
     with torch.no_grad():
         images, _ = next(iter(data_loader))
         images = images[:num_images].to(device)

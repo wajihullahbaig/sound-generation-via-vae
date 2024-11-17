@@ -44,7 +44,7 @@ def test(test_loader,device:torch_device):
     visualize_latent_space(model, test_loader, device,display=True)
     
 def main(device:torch_device):            
-    batch_size = 16 
+    batch_size = 32 
     data_module = SpectrogramDataModule(
     data_dir="C:/Users/Acer/work/data/free-audio-spectrogram",
     batch_size=batch_size,
