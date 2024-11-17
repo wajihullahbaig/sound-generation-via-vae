@@ -31,7 +31,7 @@ def select_spectrograms(spectrograms, file_paths, min_max_values, num_spectrogra
     normalized_min_max_paths = {os.path.normpath(k): v for k, v in min_max_values.items()}
     sampled_min_max_values = [normalized_min_max_paths[os.path.normpath(fp)] for fp in sampled_file_paths]
     
-    return sampled_spectrograms, sampled_min_max_values 
+    return sampled_spectrograms, sampled_min_max_values, sampled_file_paths
 
 def save_signals_sf(signals, save_dir, sample_rate=22050):
     os.makedirs(save_dir, exist_ok=True)
@@ -40,10 +40,15 @@ def save_signals_sf(signals, save_dir, sample_rate=22050):
         sf.write(save_path, signal,samplerate=22050)
         
 
-def save_signals_torch(signals, save_dir, sample_rate=22050):
+def save_signals_torch(signals, save_dir, sample_rate=22050, file_paths = None):
     os.makedirs(save_dir, exist_ok=True)
     for i, signal in enumerate(signals):
-        save_path = os.path.join(save_dir, f"{i}.wav")
+        if file_paths is not None:
+            save_path = os.path.join(save_dir, os.path.splitext(os.path.basename(file_paths[i]))[0]+".wav")            
+        else:
+            save_path = os.path.join(save_dir, f"{i}.wav")
+            
+        
         torchaudio.save(save_path, signal, sample_rate)       
                 
 
@@ -52,16 +57,16 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')    
     set_seed(111)   
     
-    # Configure preprocessing - Ensure you have correct configuratiosn
-    processing_config_128X128_mels = ProcessingConfig(
+    # Configure preprocessing - Ensure you have correct configurations from spectrogram creation
+    processing_config_64x256 = ProcessingConfig(
         sample_rate=22050,
-        duration=0.74,
-        n_fft=2048,
-        hop_length=128,
-        n_mels=128,
-    )
+        duration=0.7425,      
+        n_fft=512,        
+        hop_length=64,     
+        n_mels=64,         
+        )
     
-    processor = SpectrogramProcessor(processing_config_128X128_mels,device=device)
+    processor = SpectrogramProcessor(processing_config_64x256,device=device)
     SAVE_DIR_ORIGINAL = "free_spoken_digit/samples/original/"
     SAVE_DIR_GENERATED = "free_spoken_digit/samples/generated/"
     SPECTROGRAMS_PATH = "C:/Users/Acer/work/data/free-audio-spectrogram"
@@ -69,12 +74,12 @@ if __name__ == "__main__":
 
      
     
-    # Initialize the model - make sure it has same structure as saved model
+    # Initialize the model - make sure it has same structure as saved model as done in training
     model = VAE(
-        input_shape=(128, 128, 1),
-        conv_filters=(128, 96,64),
-        conv_kernels=(3, 3, 3),
-        conv_strides=(1, 2, 2),
+        input_shape=(64, 256, 1),
+        conv_filters=(128,96,64,32),
+        conv_kernels=(3, 3, 3,3),
+        conv_strides=(1, 2, 2,1),
         latent_dim=32,
         dropout_rate=0.2,
         noise_factor=0.1,
@@ -97,7 +102,7 @@ if __name__ == "__main__":
     specs, file_paths = load_fsdd(SPECTROGRAMS_PATH)
     
     # Sample spectrograms + min max values
-    sampled_specs, sampled_min_max_values, = select_spectrograms(
+    sampled_specs, sampled_min_max_values, sampled_file_paths = select_spectrograms(
         specs,
         file_paths,
         min_max_values,
@@ -122,7 +127,7 @@ if __name__ == "__main__":
     
 
     # Save audio signals
-    save_signals_torch(vae_recreated_signals, SAVE_DIR_GENERATED)
-    save_signals_torch(originaL_signals_recreated, SAVE_DIR_ORIGINAL)
+    save_signals_torch(vae_recreated_signals, SAVE_DIR_GENERATED, file_paths=sampled_file_paths)
+    save_signals_torch(originaL_signals_recreated, SAVE_DIR_ORIGINAL, file_paths=sampled_file_paths)
     
     print("Completed!")

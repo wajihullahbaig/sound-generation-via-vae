@@ -13,16 +13,21 @@ from spectrogram_processor import SpectrogramProcessor, ProcessingConfig
 from spectrogram_data_module import SpectrogramDataModule
 from common.visualizations import visualize_reconstructions,visualize_latent_space
 from common.seeding import set_seed
-
+from torch import device as torch_device
 
         
-def test(test_loader):
-    # Set device
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')    
-    set_seed(111)   
-    
-    model = VAE().to(device)
-    
+def test(test_loader,device:torch_device):    
+   # Create model - set noise_factor > 0.0 to make VAE a DVAE
+    model = VAE(
+        input_shape=(64, 256, 1),
+        conv_filters=(128,96,64,32),
+        conv_kernels=(3, 3, 3,3),
+        conv_strides=(1, 2, 2,1),
+        latent_dim=32,
+        dropout_rate=0.2,
+        noise_factor=0.1,
+        seed=42
+    ).to(device)
     # If you have a saved model, load it
     checkpoint = torch.load('checkpoints/vae_free_spoken_digit_20241114_152708_best.pt')
     model.load_state_dict(checkpoint['model_state_dict'])
@@ -38,12 +43,8 @@ def test(test_loader):
     print("\nValidation Set Latent Space:")
     visualize_latent_space(model, test_loader, device,display=True)
     
-def main():    
-    
-    # Set device
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    batch_size = 16
-    set_seed(111)
+def main(device:torch_device):            
+    batch_size = 16 
     data_module = SpectrogramDataModule(
     data_dir="C:/Users/Acer/work/data/free-audio-spectrogram",
     batch_size=batch_size,
@@ -61,10 +62,10 @@ def main():
              
     # Create model - set noise_factor > 0.0 to make VAE a DVAE
     model = VAE(
-        input_shape=(128, 128, 1),
-        conv_filters=(128, 96,64),
-        conv_kernels=(3, 3, 3),
-        conv_strides=(1, 2, 2),
+        input_shape=(64, 256, 1),
+        conv_filters=(128,96,64,32),
+        conv_kernels=(3, 3, 3,3),
+        conv_strides=(1, 2, 2,1),
         latent_dim=32,
         dropout_rate=0.2,
         noise_factor=0.1,
@@ -104,20 +105,20 @@ def main():
    
     return history,test_loader
 
-def generate_spectrograms():
+def generate_spectrograms(device:torch_device):
     """
     Generate spectrograms from audio files.
     """
-    # Configure preprocessing
-    processing_config_128X128_mels = ProcessingConfig(
+    # Configure preprocessing - Ensure you have correct configuratiosn    
+    processing_config_256x64 = ProcessingConfig(
         sample_rate=22050,
-        duration=0.74,
-        n_fft=2048,
-        hop_length=128,
-        n_mels=128,
-    )
+        duration=0.7425,      
+        n_fft=512,        
+        hop_length=64,     
+        n_mels=64,         
+        )
     
-    processor = SpectrogramProcessor(processing_config_128X128_mels)
+    processor = SpectrogramProcessor(processing_config_256x64,device=device)
     processor.create_spectrograms_and_save(
         audio_dir="C:/Users/Acer/work/git/free-spoken-digit-dataset/recordings",
         save_dir="C:/Users/Acer/work/data/free-audio-spectrogram",
@@ -125,10 +126,13 @@ def generate_spectrograms():
 
 
 if __name__ == '__main__':
+    # Set device
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    set_seed(111)    
     # First create the spectrorgrams, you probably need to do this once.
-    # generate_spectrograms()    
+    generate_spectrograms(device=device)    
     # Load history    
-    history, test_loader = main()
-    # test(test_loader)
+    history, test_loader = main(device=device)
+    #test(test_loader,device=device)
 
     

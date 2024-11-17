@@ -259,7 +259,7 @@ class VAETrainer:
             
             # Optional: Visualize reconstructions every N epochs
             if epoch % 5 == 0 and self.reconstruction_save_dir:
-                visualize_reconstructions(self.model, val_loader, self.device, display=False,save_path=self.reconstruction_save_dir)            
+                visualize_reconstructions(self.model, val_loader, self.device,num_images= val_loader.batch_size, display=False,save_path=self.reconstruction_save_dir)                        
         
         
         return dict(history)

@@ -15,9 +15,14 @@ def un_squeeze_tensor(x):
     """Remove extra dimension."""
     return x.unsqueeze(0)
 
-def normalize_tensor(x):
-    """Scale tensor to [0,1] range."""
-    return (x - x.min()) / (x.max() - x.min() + 1e-8)
+def conditional_permute(x):
+    """Reshape the array so that when we do ToTensor we get corrected shape"""
+    if x.dim() == 3:
+        if x.shape[1] == 1:
+            return x.permute(1, 2, 0)
+    else:
+        return x
+            
 
 class SpectrogramDataModule:
     """Handles spectrogram dataset loading and preprocessing with balanced class distribution."""
@@ -45,8 +50,7 @@ class SpectrogramDataModule:
         # Define transforms using named functions instead of lambdas
         self.transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Lambda(squeeze_tensor),
-            transforms.Lambda(un_squeeze_tensor)
+            transforms.Lambda(conditional_permute),
         ])
         
         self.train_dataset = None

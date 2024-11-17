@@ -21,25 +21,25 @@ class ProcessingConfig:
     
     def __post_init__(self):
         """Validate configuration and verify exact bin count."""
-        total_samples = int(self.sample_rate * self.duration)
-        time_bins = (total_samples + self.hop_length) // self.hop_length
+        self.total_samples = int(self.sample_rate * self.duration)
+        self.time_bins = (self.total_samples + self.hop_length) // self.hop_length
         
         print("\n=== Spectrogram Configuration ===")
         print(f"Duration: {self.duration:.6f} seconds")
         print(f"Sample rate: {self.sample_rate} Hz")
-        print(f"Total samples: {total_samples}")
+        print(f"Total samples: {self.total_samples}")
         print(f"Hop length: {self.hop_length}")
-        print(f"Time bins: {time_bins}")
+        print(f"Time bins: {self.time_bins}")
         print(f"Mel bins: {self.n_mels}")
         print(f"Time resolution: {(self.hop_length / self.sample_rate * 1000):.2f} ms per bin")
         print(f"Frequency resolution: {(self.sample_rate / 2 / self.n_mels):.2f} Hz per bin")
-        print(f"Output shape: {time_bins}x{self.n_mels}")
+        print(f"Output shape: {self.n_mels}x{self.time_bins}")
                        
         if self.n_fft < 2 * self.hop_length:
             raise ValueError(f"n_fft ({self.n_fft}) should be >= 2 * hop_length ({2 * self.hop_length})")
 
 class SpectrogramProcessor:
-    """Creates mel spectrograms with exact 256 time bins."""
+    """Creates mel spectrograms"""
     
     def __init__(self, config: ProcessingConfig,device:torch_device):
         self.device = device
@@ -77,7 +77,10 @@ class SpectrogramProcessor:
         plt.xlabel('Time')
         plt.ylabel('Mel Frequency')
         plt.tight_layout()
+        plt.draw()
+        plt.pause(0.001)
         plt.show()
+        
     
     def create_audio_from_spectrogram(self, S_db: torch.Tensor, min_val: float, max_val: float) -> torch.Tensor:                
         # First we have De-normalize the signal. The order in which
@@ -142,13 +145,13 @@ class SpectrogramProcessor:
             waveform = waveform[:, :self.num_samples]
         
         # Create the Mel Spectrograms
-        S = self.mel_spectrogram_transform(waveform)
+        S = self.mel_spectrogram_transform(waveform)# (channel, n_mels, time)
         # Convert to dB scale
         S_db = torchaudio.transforms.AmplitudeToDB()(S)
         if S_db.shape[1] != self.config.n_mels:
             raise ValueError(f"Expected {self.config.n_mels} mel bins, but got {S_db.shape[1]}")
-        if S_db.shape[2] != self.config.n_mels:
-            raise ValueError(f"Expected {self.config.n_mels} mel bins, but got {S_db.shape[2]}")
+        if S_db.shape[2] != self.config.time_bins:
+            raise ValueError(f"Expected {self.config.time_bins} time bins, but got {S_db.shape[2]}")
         
         # Get min/max, then normalize the spectrogram
         S_min = torch.min(S_db)
