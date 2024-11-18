@@ -234,26 +234,34 @@ class VAE(nn.Module):
             - log_var: log variance of latent distribution
             - noisy_x: noisy version of input (if noise_factor > 0)
         """
-        # Store original input for loss calculation
-        original_x = x
-        
         # Apply noise transformation
         noisy_x = self.noise_transform(x)
         
-        # If no noise was added, set noisy_x to None for clarity
+        # Store original input format flag
+        needs_permute = x.size(1) != self.input_shape[2]
+        original_x = x
+
+        # Apply noise transformation
+        noisy_x = self.noise_transform(x)
+        
+        # If no noise was added, set noisy_x to None
         if self.noise_transform.noise_factor <= 0.0:
             noisy_x = None
             x_for_encoder = original_x
         else:
             x_for_encoder = noisy_x
             
+        # Convert to PyTorch format if needed
+        if needs_permute:
+            x_for_encoder = x_for_encoder.permute(0, 3, 1, 2)
+            
         # Regular VAE forward pass
         mu, log_var = self.encoder(x_for_encoder)
         z = self.reparameterize(mu, log_var)
         reconstruction = self.decoder(z)
         
-        # Handle permutation if needed
-        if original_x.size(1) != self.input_shape[2]:
+        # Convert back to original format if needed
+        if needs_permute:
             reconstruction = reconstruction.permute(0, 2, 3, 1)
             if noisy_x is not None:
                 noisy_x = noisy_x.permute(0, 2, 3, 1)
@@ -352,3 +360,5 @@ class VAE(nn.Module):
     def noise_factor(self, value: float):
         """Set noise factor."""
         self.noise_transform.noise_factor = value
+        
+        

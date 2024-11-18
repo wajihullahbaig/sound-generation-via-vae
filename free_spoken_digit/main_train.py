@@ -44,7 +44,7 @@ def test(test_loader,device:torch_device):
     visualize_latent_space(model, test_loader, device,display=True)
     
 def main(device:torch_device):            
-    batch_size = 32 
+    batch_size = 8 
     data_module = SpectrogramDataModule(
     data_dir="C:/Users/Acer/work/data/free-audio-spectrogram",
     batch_size=batch_size,
@@ -62,10 +62,10 @@ def main(device:torch_device):
              
     # Create model - set noise_factor > 0.0 to make VAE a DVAE
     model = VAE(
-        input_shape=(64, 256, 1),
-        conv_filters=(128,96,64,32),
-        conv_kernels=(3, 3, 3,3),
-        conv_strides=(1, 2, 2,1),
+        input_shape=(32, 32,1),
+        conv_filters=(64,32,32),
+        conv_kernels=(3, 3, 3),
+        conv_strides=(1, 2, 2),
         latent_dim=32,
         dropout_rate=0.2,
         noise_factor=0.1,
@@ -118,7 +118,23 @@ def generate_spectrograms(device:torch_device):
         n_mels=64,         
         )
     
-    processor = SpectrogramProcessor(processing_config_256x64,device=device)
+    processing_config_128x128 = ProcessingConfig(
+        sample_rate=22050,
+        duration=0.7425,      
+        n_fft=2048,        
+        hop_length=128,     
+        n_mels=128,         
+        )
+    
+    processing_config_32x32= ProcessingConfig(
+        sample_rate=22050,
+        duration=0.7425,      
+        n_fft=2048,        
+        hop_length=512,     
+        n_mels=32,         
+        )
+    
+    processor = SpectrogramProcessor(processing_config_32x32,device=device)
     processor.create_spectrograms_and_save(
         audio_dir="C:/Users/Acer/work/git/free-spoken-digit-dataset/recordings",
         save_dir="C:/Users/Acer/work/data/free-audio-spectrogram",
@@ -130,9 +146,9 @@ if __name__ == '__main__':
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     set_seed(111)    
     # First create the spectrorgrams, you probably need to do this once.
-    generate_spectrograms(device=device)    
+    #generate_spectrograms(device=device)    
     # Load history    
     history, test_loader = main(device=device)
-    #test(test_loader,device=device)
+    test(test_loader,device=device)
 
     

@@ -7,7 +7,43 @@ from pathlib import Path
 from typing import Optional, Union, List
 import seaborn as sns
 
+def show_spectrogram(S_db, display=True, save_dir=None):
+        plt.figure(figsize=(12, 8))
+        if torch.is_tensor(S_db[0]):
+            plt.imshow(S_db[0].numpy(), aspect='auto', origin='lower', interpolation='nearest')
+        else:
+            plt.imshow(S_db[0], aspect='auto', origin='lower', interpolation='nearest')
+        plt.colorbar(format='%+2.0f dB')
+        plt.title('Mel Spectrogram (Normalized)')
+        plt.xlabel('Time')
+        plt.ylabel('Mel Frequency')
+        plt.tight_layout()
 
+        if display:
+            plt.draw()
+            plt.pause(0.001)
+            plt.show()
+            return None
+        else:
+            if save_dir is None:
+                raise ValueError("save_dir must be provided when display is False")
+            
+            # Create the filename with the current datetime
+            current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"spectrogram_{current_time}.png"
+            
+            # Ensure the directory exists
+            os.makedirs(save_dir, exist_ok=True)
+            
+            # Combine the directory and filename
+            save_path = os.path.join(save_dir, filename)
+            
+            # Save the plot
+            plt.savefig(save_path)
+            plt.close()  # Close the figure to free up memory
+
+            return save_path
+        
 def plot_spectrogram_tensor_or_array(
     spec: Union[torch.Tensor, np.ndarray],
     sr : int = 22050,

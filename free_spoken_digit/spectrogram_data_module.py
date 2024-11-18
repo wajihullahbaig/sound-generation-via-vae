@@ -5,7 +5,7 @@ from typing import Optional, Dict, Tuple, List
 import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
 import torchvision.transforms as transforms
-from visualizations import plot_spectrogram, plot_batch_spectrograms,plot_spectrogram_tensor_or_array
+from visualizations import plot_spectrogram, plot_batch_spectrograms,plot_spectrogram_tensor_or_array, show_spectrogram
 # Define transform functions outside the class
 def squeeze_tensor(x):
     """Remove extra dimension."""
@@ -15,13 +15,28 @@ def un_squeeze_tensor(x):
     """Remove extra dimension."""
     return x.unsqueeze(0)
 
-def conditional_permute(x):
-    """Reshape the array so that when we do ToTensor we get corrected shape"""
-    if x.dim() == 3:
-        if x.shape[1] == 1:
-            return x.permute(1, 2, 0)
-    else:
-        return x
+def numpy_to_tensor(np_array):
+    """
+    Convert numpy array (CxHxW) to tensor while preserving channel order.
+    
+    Args:
+        np_array (numpy.ndarray): Input array in CxHxW format
+        
+    Returns:
+        torch.Tensor: Tensor with same shape and order as input
+    """
+    # Convert to float32 if not already
+    if np_array.dtype != np.float32:
+        np_array = np_array.astype(np.float32)
+    
+    # Convert directly to tensor without permuting
+    tensor = torch.from_numpy(np_array)
+    
+    # Ensure the values are between 0 and 1 if needed
+    if tensor.max() > 1.0:
+        tensor = tensor / 255.0
+    
+    return tensor
             
 
 class SpectrogramDataModule:
@@ -49,8 +64,7 @@ class SpectrogramDataModule:
         
         # Define transforms using named functions instead of lambdas
         self.transform = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Lambda(conditional_permute),
+            transforms.Lambda(numpy_to_tensor),
         ])
         
         self.train_dataset = None

@@ -8,6 +8,9 @@ import numpy as np
 import pickle
 import os
 import matplotlib.pyplot as plt
+from datetime import datetime
+from visualizations import show_spectrogram
+
 
 @dataclass
 class ProcessingConfig:
@@ -18,6 +21,7 @@ class ProcessingConfig:
     hop_length: int = 128
     n_mels: int = 64   
     duration: float = 0.74
+        
     
     def __post_init__(self):
         """Validate configuration and verify exact bin count."""
@@ -68,19 +72,8 @@ class SpectrogramProcessor:
             hop_length=self.config.hop_length,
             n_iter=100
         )
-        
-    def _show_spectrogram(self,S_db):        
-        plt.figure(figsize=(12, 8))
-        plt.imshow(S_db[0].numpy(), aspect='auto', origin='lower', interpolation='nearest')
-        plt.colorbar(format='%+2.0f dB')
-        plt.title('Mel Spectrogram (Normalized)')
-        plt.xlabel('Time')
-        plt.ylabel('Mel Frequency')
-        plt.tight_layout()
-        plt.draw()
-        plt.pause(0.001)
-        plt.show()
-        
+
+           
     
     def create_audio_from_spectrogram(self, S_db: torch.Tensor, min_val: float, max_val: float) -> torch.Tensor:                
         # First we have De-normalize the signal. The order in which
@@ -157,7 +150,8 @@ class SpectrogramProcessor:
         S_min = torch.min(S_db)
         S_max = torch.max(S_db)
         S_normalized = (S_db - S_min) / (S_max - S_min)
-        #self._show_spectrogram(S_normalized)
+        
+        #show_spectrogram(S_normalized,display=True)
         
         return S_normalized, S_min, S_max
 

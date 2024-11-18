@@ -12,6 +12,52 @@ from pathlib import Path
 from datetime import datetime
 import numpy as np
 
+import matplotlib.pyplot as plt
+import numpy as np
+import torch
+import librosa
+import librosa.display
+from pathlib import Path
+from typing import Optional, Union, List
+import seaborn as sns
+
+def show_spectrogram(S_db, display=True, save_dir=None):
+        plt.figure(figsize=(12, 8))
+        if torch.is_tensor(S_db[0]):
+            plt.imshow(S_db[0].numpy(), aspect='auto', origin='lower', interpolation='nearest')
+        else:
+            plt.imshow(S_db[0], aspect='auto', origin='lower', interpolation='nearest')
+        plt.colorbar(format='%+2.0f dB')
+        plt.title('Mel Spectrogram (Normalized)')
+        plt.xlabel('Time')
+        plt.ylabel('Mel Frequency')
+        plt.tight_layout()
+
+        if display:
+            plt.draw()
+            plt.pause(0.001)
+            plt.show()
+            return None
+        else:
+            if save_dir is None:
+                raise ValueError("save_dir must be provided when display is False")
+            
+            # Create the filename with the current datetime
+            current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"spectrogram_{current_time}.png"
+            
+            # Ensure the directory exists
+            os.makedirs(save_dir, exist_ok=True)
+            
+            # Combine the directory and filename
+            save_path = os.path.join(save_dir, filename)
+            
+            # Save the plot
+            plt.savefig(save_path)
+            plt.close()  # Close the figure to free up memory
+
+            return save_path
+        
 def visualize_reconstructions(
     model, 
     data_loader, 
@@ -59,14 +105,6 @@ def visualize_reconstructions(
         fig_height = fig_size_multiplier[1]
         fig, axes = plt.subplots(2, num_images, figsize=(fig_width, fig_height))
         
-        # Normalize function for better visualization
-        def normalize_for_display(tensor):
-            tensor_np = tensor.cpu().numpy()
-            if spectrogram_mode:
-                # For spectrograms, often better to use log scale
-                tensor_np = np.log(tensor_np + 1e-9)
-            return tensor_np
-
         # Visualization loop
         for i in range(num_images):
             # Original images
@@ -83,12 +121,15 @@ def visualize_reconstructions(
                 axes[0,i].imshow(img_orig)
                 axes[1,i].imshow(img_recon)
             else:
-                # Handle grayscale images
-                img_orig = normalize_for_display(img_orig.squeeze())
-                img_recon = normalize_for_display(reconstructions[i].squeeze())
+                # Handle grayscale images (spectrograms)
+                img_orig = img_orig.squeeze()
+                img_recon = reconstructions[i].cpu().squeeze()
                 
-                axes[0,i].imshow(img_orig, cmap=cmap)
-                axes[1,i].imshow(img_recon, cmap=cmap)
+                # Use consistent visualization parameters with show_spectrogram
+                axes[0,i].imshow(img_orig, cmap=cmap, origin='lower', 
+                               aspect='auto', interpolation='nearest')
+                axes[1,i].imshow(img_recon, cmap=cmap, origin='lower',
+                               aspect='auto', interpolation='nearest')
             
             # Turn off axes for cleaner look
             axes[0,i].axis('off')
