@@ -50,7 +50,7 @@ def test(test_loader):
 def main():
     # Set device
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    batch_size = 2
+    batch_size = 16
     set_seed(111)
     # Setup data
     data_module = MNISTDataModule(

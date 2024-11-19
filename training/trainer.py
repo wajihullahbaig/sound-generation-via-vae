@@ -9,8 +9,6 @@ from collections import defaultdict
 from tqdm import tqdm
 import json
 from common.visualizations import visualize_reconstructions
-from visualizations import plot_batch_spectrograms
-
 
     
 class VAETrainer:
