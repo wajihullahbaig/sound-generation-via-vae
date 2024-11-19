@@ -58,43 +58,60 @@ if __name__ == "__main__":
     set_seed(111)   
     
     # Configure preprocessing - Ensure you have correct configurations from spectrogram creation
-    processing_config_64x256 = ProcessingConfig(
+    processing_configurations = {
+    "256x64": ProcessingConfig(
         sample_rate=22050,
         duration=0.7425,      
         n_fft=512,        
         hop_length=64,     
         n_mels=64,         
+        ),
+    "128x128": ProcessingConfig(
+        sample_rate=22050,
+        duration=0.7425,      
+        n_fft=2048,        
+        hop_length=128,     
+        n_mels=128,         
+        ),    
+    "32x32": ProcessingConfig(
+        sample_rate=22050,
+        duration=0.7425,      
+        n_fft=2048,        
+        hop_length=512,     
+        n_mels=32,         
         )
+    }
+    selection = "128x128"
+    processing_configurations[selection].print_config()
+    sp = SpectrogramProcessor(processing_configurations[selection],device=device)
     
-    processor = SpectrogramProcessor(processing_config_64x256,device=device)
     SAVE_DIR_ORIGINAL = "free_spoken_digit/samples/original/"
     SAVE_DIR_GENERATED = "free_spoken_digit/samples/generated/"
     SPECTROGRAMS_PATH = "C:/Users/Acer/work/data/free-audio-spectrogram"
     MIN_MAX_VALUES_PATH = "C:/Users/Acer/work/data/free-audio-spectrogram/min_max_values.pkl"
 
-     
-    
-    # Initialize the model - make sure it has same structure as saved model as done in training
+    # Create model - set noise_factor > 0.0 to make VAE a DVAE
+    # Note - The VAE input shape depends on the shape of spectrograms
+    H = processing_configurations[selection].n_mels
+    W = processing_configurations[selection].time_bins
     model = VAE(
-        input_shape=(64, 256, 1),
-        conv_filters=(128,96,64,32),
-        conv_kernels=(3, 3, 3,3),
-        conv_strides=(1, 2, 2,1),
-        latent_dim=32,
+        input_shape=(H, W,1),
+        conv_filters=(64,32,16),
+        conv_kernels=(3, 3, 3),
+        conv_strides=(1, 2, 2),
+        latent_dim=16,
         dropout_rate=0.2,
         noise_factor=0.1,
         seed=42
     ).to(device)
     
     # If you have a saved model, load it
-    checkpoint = torch.load('free_spoken_digit/checkpoints/vae_free_spoken_digit_20241116_194449_latest.pt')
+    checkpoint = torch.load('free_spoken_digit/checkpoints/vae_free_spoken_digit_20241118_171519_best.pt')
     model.load_state_dict(checkpoint['model_state_dict'])
 
     # Set model to evaluation mode
     model.eval()
     
-    sp = SpectrogramProcessor(processing_config_128X128_mels,device)
-
     # Load spectrograms + min max values
     with open(MIN_MAX_VALUES_PATH, "rb") as f:
         min_max_values = pickle.load(f)

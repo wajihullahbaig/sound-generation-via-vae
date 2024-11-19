@@ -8,7 +8,7 @@
             "name": "Training debugger",
             "type": "debugpy",
             "request": "launch",
-            "program": "free_spoken_digit/main.py",            
+            "program": "free_spoken_digit/create_audios.py",            
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
             "env": {
