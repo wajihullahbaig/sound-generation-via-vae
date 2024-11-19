@@ -12,7 +12,7 @@ import random
 import numpy as np
 from common.seeding import set_seed
 from common.visualizations import visualize_reconstructions,visualize_latent_space
-
+import pandas as pd
 
         
 def test(test_loader):
@@ -33,7 +33,7 @@ def test(test_loader):
     ).to(device)
     
     # If you have a saved model, load it
-    checkpoint = torch.load('checkpoints/vae_mnist_20241113_091742_best.pt')
+    checkpoint = torch.load('mnist/checkpoints/vae_mnist_20241119_102442_best.pt')
     model.load_state_dict(checkpoint['model_state_dict'])
 
     # Set model to evaluation mode
@@ -114,6 +114,7 @@ def main():
 if __name__ == '__main__':
     # Load history
     history,test_loader = main()
+    print(pd.DataFrame.from_dict(history).to_markdown(index=False))
     test(test_loader)
 
     
