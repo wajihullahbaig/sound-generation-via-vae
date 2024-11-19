@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # 1. Load the audio file
-file_path = 'C:\\Users\\Acer\\work\\git\\free-spoken-digit-dataset\\recordings\\9_yweweler_36.wav'
+file_path = 'C:\\Users\\Acer\\work\\git\\free-spoken-digit-dataset\\recordings\\0_yweweler_36.wav'
 
 waveform, sr = torchaudio.load(file_path)
 

@@ -26,8 +26,14 @@ class ProcessingConfig:
     def __post_init__(self):
         """Validate configuration and verify exact bin count."""
         self.total_samples = int(self.sample_rate * self.duration)
-        self.time_bins = (self.total_samples + self.hop_length) // self.hop_length
+        self.time_bins = int((self.total_samples + self.hop_length) // self.hop_length)        
+        self.time_resolution = (self.hop_length / self.sample_rate * 1000)
+        self.frequency_resolution= (self.sample_rate / 2 / self.n_mels)                               
         
+        if self.n_fft < 2 * self.hop_length:
+            raise ValueError(f"n_fft ({self.n_fft}) should be >= 2 * hop_length ({2 * self.hop_length})")
+        
+    def print_config(self):
         print("\n=== Spectrogram Configuration ===")
         print(f"Duration: {self.duration:.6f} seconds")
         print(f"Sample rate: {self.sample_rate} Hz")
@@ -35,13 +41,10 @@ class ProcessingConfig:
         print(f"Hop length: {self.hop_length}")
         print(f"Time bins: {self.time_bins}")
         print(f"Mel bins: {self.n_mels}")
-        print(f"Time resolution: {(self.hop_length / self.sample_rate * 1000):.2f} ms per bin")
-        print(f"Frequency resolution: {(self.sample_rate / 2 / self.n_mels):.2f} Hz per bin")
+        print(f"Time resolution: {self.time_resolution:.2f} ms per bin")
+        print(f"Frequency resolution: {self.frequency_resolution:.2f} Hz per bin")
         print(f"Output shape: {self.n_mels}x{self.time_bins}")
-                       
-        if self.n_fft < 2 * self.hop_length:
-            raise ValueError(f"n_fft ({self.n_fft}) should be >= 2 * hop_length ({2 * self.hop_length})")
-
+        
 class SpectrogramProcessor:
     """Creates mel spectrograms"""
     

@@ -268,73 +268,7 @@ class VAE(nn.Module):
         
         return reconstruction, mu, log_var, noisy_x
     
-                
-    def sample(self, num_samples: int = 1, temp: float = 1.0):
-        """
-        Sample from the latent space and generate audio spectrograms.
-        Args:
-            num_samples: Number of samples to generate
-            temp: Temperature parameter for sampling (higher = more diverse but potentially less stable)
-        """
-        self.eval()  # Set to evaluation mode
-        device = next(self.parameters()).device
-        
-        with torch.no_grad():
-            # Sample from standard normal distribution
-            z = torch.randn(num_samples, self.latent_dim, device=device) * temp
-            # Decode the latent vectors
-            samples = self.decoder(z)
-            
-        return samples
-
-    def interpolate(self, spec1, spec2, steps: int = 10):
-        """
-        Interpolate between two spectrograms in latent space.
-        Args:
-            spec1: First spectrogram
-            spec2: Second spectrogram
-            steps: Number of interpolation steps
-        """
-        self.eval()
-        device = next(self.parameters()).device
-        
-        with torch.no_grad():
-            # Encode both spectrograms
-            mu1, _ = self.encoder(spec1.to(device))
-            mu2, _ = self.encoder(spec2.to(device))
-            
-            # Create interpolation points
-            alphas = torch.linspace(0, 1, steps)
-            interpolated = []
-            
-            # Interpolate in latent space
-            for alpha in alphas:
-                z = mu1 * (1 - alpha) + mu2 * alpha
-                interpolated.append(self.decoder(z))
-                
-        return torch.stack(interpolated)
-
-    def conditional_sample(self, condition, num_samples: int = 1, temp: float = 1.0):
-        """
-        Sample from the latent space with a condition (e.g., specific attributes)
-        Args:
-            condition: Conditioning vector/tensor
-            num_samples: Number of samples to generate
-            temp: Temperature parameter
-        """
-        self.eval()
-        device = next(self.parameters()).device
-        
-        with torch.no_grad():
-            # Sample random noise
-            z = torch.randn(num_samples, self.latent_dim - condition.shape[1], device=device) * temp
-            # Concatenate with condition
-            z_cond = torch.cat([z, condition.repeat(num_samples, 1)], dim=1)
-            # Generate samples
-            samples = self.decoder(z_cond)
-            
-        return samples
-    
+                   
     def _init_weights(self, m):
         """Initialize model weights with Xavier initialization."""
         if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d, nn.Linear)):
