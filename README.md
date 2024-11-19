@@ -23,3 +23,12 @@ hence the reconstruction itself is lossy.
 
 ## Here is the free dataset
 [Free Spoken Audio Dataset](https://github.com/Jakobovski/free-spoken-digit-dataset)
+
+
+## Need to understand how everything is put together?
+Watch the videos by [Velario Velrado](https://www.youtube.com/watch?v=Ey8IZQl_lKs&list=PL-wATfeyAMNpEyENTc-tVH5tfLGKtSWPp)
+
+You will find his video very important and helps you get through
+* Audio Spectrograms
+* Librosa
+* Keras
