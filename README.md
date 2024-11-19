@@ -10,7 +10,7 @@ That is why we convert wav files to spectrograms and use those spectrograms to c
 the latent space. Our simplest choice is a VAE
 
 ## How it works 
-![VAE Diagram](VAE.png)
+![VAE Diagram](VAE_.png)
 
 ## Spectrogram and reconstruction is lossy
 When we create audio from spectrograms, esp MelSpectrograms, we tend to lose the 
