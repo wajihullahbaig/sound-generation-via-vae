@@ -103,7 +103,8 @@ def main():
     history = trainer.train(
         train_loader=train_loader,
         val_loader=val_loader,
-        num_epochs=100
+        num_epochs=100,
+        dataset_type="mnist"
     )
     
    

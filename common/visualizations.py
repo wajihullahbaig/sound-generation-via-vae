@@ -32,7 +32,8 @@ def visualize_reconstructions(
     color_mode='auto',
     spectrogram_mode=False,
     cmap='viridis',
-    fig_size_multiplier=(2, 4)
+    fig_size_multiplier=(2, 4),
+    dataset_type='general'  # Added parameter to specify dataset type
 ):
     """
     Visualize or save original and reconstructed images with enhanced color support.
@@ -48,6 +49,7 @@ def visualize_reconstructions(
         spectrogram_mode: If True, applies spectrogram-specific visualization settings
         cmap: Colormap for visualization (e.g., 'viridis', 'magma', 'gray')
         fig_size_multiplier: Tuple of (width, height) multipliers for figure size
+        dataset_type: String indicating dataset type ('mnist', 'spectrogram', or 'general')
     """
     model.eval()
     save_path = Path(save_path) if save_path else Path('/viz_outputs')
@@ -85,15 +87,20 @@ def visualize_reconstructions(
                 axes[0,i].imshow(img_orig)
                 axes[1,i].imshow(img_recon)
             else:
-                # Handle grayscale images (spectrograms)
+                # Handle grayscale images
                 img_orig = img_orig.squeeze()
                 img_recon = reconstructions[i].cpu().squeeze()
                 
-                # Use consistent visualization parameters with show_spectrogram
-                axes[0,i].imshow(img_orig, cmap=cmap, origin='lower', 
-                               aspect='auto', interpolation='nearest')
-                axes[1,i].imshow(img_recon, cmap=cmap, origin='lower',
-                               aspect='auto', interpolation='nearest')
+                if spectrogram_mode or dataset_type == 'spectrogram':
+                    # Spectrogram-specific visualization
+                    axes[0,i].imshow(img_orig, cmap=cmap, origin='lower', 
+                                   aspect='auto', interpolation='nearest')
+                    axes[1,i].imshow(img_recon, cmap=cmap, origin='lower',
+                                   aspect='auto', interpolation='nearest')
+                else:
+                    # MNIST or other image visualization (no flipping)
+                    axes[0,i].imshow(img_orig, cmap=cmap, interpolation='nearest')
+                    axes[1,i].imshow(img_recon, cmap=cmap, interpolation='nearest')
             
             # Turn off axes for cleaner look
             axes[0,i].axis('off')

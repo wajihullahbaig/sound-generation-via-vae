@@ -211,7 +211,7 @@ class VAETrainer:
     def train(self, 
               train_loader: DataLoader,
               val_loader: DataLoader,
-              num_epochs: int=20) -> Dict[str, list]:
+              num_epochs: int=20,dataset_type="general") -> Dict[str, list]:
         """
         Train the model for multiple epochs.
         
@@ -257,7 +257,7 @@ class VAETrainer:
             
             # Optional: Visualize reconstructions every N epochs
             if epoch % 5 == 0 and self.reconstruction_save_dir:
-                visualize_reconstructions(self.model, val_loader, self.device, display=False,save_path=self.reconstruction_save_dir)                        
+                visualize_reconstructions(self.model, val_loader, self.device, display=False,save_path=self.reconstruction_save_dir,dataset_type=dataset_type)                        
         
         
         return dict(history)
