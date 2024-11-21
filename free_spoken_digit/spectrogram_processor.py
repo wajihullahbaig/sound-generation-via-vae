@@ -43,7 +43,7 @@ class ProcessingConfig:
         print(f"Mel bins: {self.n_mels}")
         print(f"Time resolution: {self.time_resolution:.2f} ms per bin")
         print(f"Frequency resolution: {self.frequency_resolution:.2f} Hz per bin")
-        print(f"Output shape: {self.n_mels}x{self.time_bins}")
+        print(f"Output shape - mels x time_bin - > HxW: {self.n_mels} x {self.time_bins}")
         
 class SpectrogramProcessor:
     """Creates mel spectrograms"""

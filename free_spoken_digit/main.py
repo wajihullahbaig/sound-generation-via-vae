@@ -37,7 +37,7 @@ def test(test_loader,model:VAE,device:torch_device=None):
     
 def main( train_loader: DataLoader,validation_loader:DataLoader,model:VAE,batch_size = 8, device:torch_device = None):            
     # Setup optimizer
-    optimizer = optim.Adam(model.parameters(), lr=1e-3)
+    optimizer = optim.Adam(model.parameters(), lr=1e-4)
     # Setup learning rate scheduler
     scheduler = ReduceLROnPlateau(
         optimizer,
@@ -61,7 +61,7 @@ def main( train_loader: DataLoader,validation_loader:DataLoader,model:VAE,batch_
     history = trainer.train(
         train_loader=train_loader,
         val_loader=val_loader,
-        num_epochs=100,
+        num_epochs=200,
         dataset_type="spectrogram"
     )
     
@@ -87,10 +87,10 @@ if __name__ == '__main__':
     # First create the spectrorgrams, you probably need to do this once.
      # Configure preprocessing - Ensure you have correct configuratiosn    
     processing_configurations = {
-    "256x64": ProcessingConfig(
+    "64x256": ProcessingConfig(
         sample_rate=22050,
         duration=0.7425,      
-        n_fft=512,        
+        n_fft=2048,        
         hop_length=64,     
         n_mels=64,         
         ),
@@ -112,10 +112,10 @@ if __name__ == '__main__':
     
     selection = "128x128"
     processing_configurations[selection].print_config()
-    #generate_spectrograms(processing_configurations[selection],device=device)    
+    generate_spectrograms(processing_configurations[selection],device=device)    
     
     # Let setup data for training
-    batch_size = 8 
+    batch_size = 16 
     data_module = SpectrogramDataModule(
     data_dir="C:/Users/Acer/work/data/free-audio-spectrogram",
     batch_size=batch_size,
@@ -148,10 +148,9 @@ if __name__ == '__main__':
     print(model.summary(batch_size=batch_size ))
     
     #Load history    
-    #history = main(train_loader,val_loader,model,batch_size=batch_size,device=device)
+    history = main(train_loader,val_loader,model,batch_size=batch_size,device=device)
     #print(history)
     
     test(test_loader,model,device)
-    create
 
     
