@@ -59,10 +59,10 @@ if __name__ == "__main__":
     
     # Configure preprocessing - Ensure you have correct configurations from spectrogram creation
     processing_configurations = {
-    "256x64": ProcessingConfig(
+    "64x256": ProcessingConfig(
         sample_rate=22050,
         duration=0.7425,      
-        n_fft=512,        
+        n_fft=2048,        
         hop_length=64,     
         n_mels=64,         
         ),
@@ -81,7 +81,8 @@ if __name__ == "__main__":
         n_mels=32,         
         )
     }
-    selection = "128x128"
+    
+    selection = "64x256"
     processing_configurations[selection].print_config()
     sp = SpectrogramProcessor(processing_configurations[selection],device=device)
     
@@ -96,17 +97,17 @@ if __name__ == "__main__":
     W = processing_configurations[selection].time_bins
     model = VAE(
         input_shape=(H, W,1),
-        conv_filters=(64,32,16),
-        conv_kernels=(3, 3, 3),
+        conv_filters=(128,64,32),
+        conv_kernels=(7, 5, 3),
         conv_strides=(1, 2, 2),
-        latent_dim=16,
+        latent_dim=32,
         dropout_rate=0.2,
         noise_factor=0.1,
         seed=42
     ).to(device)
-    
+     
     # If you have a saved model, load it
-    checkpoint = torch.load('free_spoken_digit/checkpoints/vae_free_spoken_digit_20241118_171519_best.pt')
+    checkpoint = torch.load('free_spoken_digit/checkpoints/vae_free_spoken_digit_20241125_150005_best.pt')
     model.load_state_dict(checkpoint['model_state_dict'])
 
     # Set model to evaluation mode

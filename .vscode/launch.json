@@ -14,6 +14,17 @@
             "env": {
                 "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}"
             },
-        }
+        },
+        {
+            "name": "Latent-to-Wav",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/create_audios.py",            
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}"
+            },
+        },
     ]
 }

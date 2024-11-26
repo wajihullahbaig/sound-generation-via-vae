@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 def test(test_loader,model:VAE,device:torch_device=None):   
          
     # If you have a saved model, load it
-    checkpoint = torch.load('free_spoken_digit/checkpoints/vae_free_spoken_digit_20241118_171519_best.pt')
+    checkpoint = torch.load('free_spoken_digit/checkpoints/vae_free_spoken_digit_20241125_150005_best.pt')
     model.load_state_dict(checkpoint['model_state_dict'])
 
     # Set model to evaluation mode
@@ -110,12 +110,12 @@ if __name__ == '__main__':
         )
     }
     
-    selection = "128x128"
+    selection = "64x256"
     processing_configurations[selection].print_config()
-    generate_spectrograms(processing_configurations[selection],device=device)    
+    #generate_spectrograms(processing_configurations[selection],device=device)    
     
     # Let setup data for training
-    batch_size = 16 
+    batch_size = 32 
     data_module = SpectrogramDataModule(
     data_dir="C:/Users/Acer/work/data/free-audio-spectrogram",
     batch_size=batch_size,
@@ -137,10 +137,10 @@ if __name__ == '__main__':
     W = processing_configurations[selection].time_bins
     model = VAE(
         input_shape=(H, W,1),
-        conv_filters=(64,32,16),
-        conv_kernels=(3, 3, 3),
+        conv_filters=(128,64,32),
+        conv_kernels=(7, 5, 3),
         conv_strides=(1, 2, 2),
-        latent_dim=16,
+        latent_dim=32,
         dropout_rate=0.2,
         noise_factor=0.1,
         seed=42
@@ -148,7 +148,7 @@ if __name__ == '__main__':
     print(model.summary(batch_size=batch_size ))
     
     #Load history    
-    history = main(train_loader,val_loader,model,batch_size=batch_size,device=device)
+    #history = main(train_loader,val_loader,model,batch_size=batch_size,device=device)
     #print(history)
     
     test(test_loader,model,device)
