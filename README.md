@@ -1,4 +1,5 @@
 # sound-generation-via-vae
+## Using pytorch spectrograms for generating Audios from wav files
 ## Creating sounds via VAE, Why use a Computer Vision approach?
 Well the problem lies in the fact that wav files have a depth of information so rich we cant 
 just deep learning networks work. The data is way way too much to handle. For example, a single
