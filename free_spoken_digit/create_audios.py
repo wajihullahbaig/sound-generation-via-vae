@@ -49,7 +49,7 @@ def save_signals_torch(signals, save_dir, sample_rate=22050, file_paths = None):
             save_path = os.path.join(save_dir, f"{i}.wav")
             
         
-        torchaudio.save(save_path, signal, sample_rate)       
+        torchaudio.save(save_path, signal.cpu(), sample_rate)       
                 
 
 if __name__ == "__main__":
@@ -88,8 +88,8 @@ if __name__ == "__main__":
     
     SAVE_DIR_ORIGINAL = "free_spoken_digit/samples/original/"
     SAVE_DIR_GENERATED = "free_spoken_digit/samples/generated/"
-    SPECTROGRAMS_PATH = "C:/Users/Acer/work/data/free-audio-spectrogram"
-    MIN_MAX_VALUES_PATH = "C:/Users/Acer/work/data/free-audio-spectrogram/min_max_values.pkl"
+    SPECTROGRAMS_PATH = "C:/Users/Precision/Onus/Data/free-audio-spectrogram"
+    MIN_MAX_VALUES_PATH = "C:/Users/Precision/Onus/Data/free-audio-spectrogram/min_max_values.pkl"
 
     # Create model - set noise_factor > 0.0 to make VAE a DVAE
     # Note - The VAE input shape depends on the shape of spectrograms
@@ -100,14 +100,14 @@ if __name__ == "__main__":
         conv_filters=(128,64,32),
         conv_kernels=(7, 5, 3),
         conv_strides=(1, 2, 2),
-        latent_dim=32,
+        latent_dim=128,
         dropout_rate=0.2,
         noise_factor=0.1,
         seed=42
     ).to(device)
      
     # If you have a saved model, load it
-    checkpoint = torch.load('free_spoken_digit/checkpoints/vae_free_spoken_digit_20241125_150005_best.pt')
+    checkpoint = torch.load('free_spoken_digit/checkpoints/vae_free_spoken_digit_20241210_121356_best.pt')
     model.load_state_dict(checkpoint['model_state_dict'])
 
     # Set model to evaluation mode

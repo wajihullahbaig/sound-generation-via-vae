@@ -21,7 +21,7 @@ from torch.utils.data import DataLoader
 def test(test_loader,model:VAE,device:torch_device=None):   
          
     # If you have a saved model, load it
-    checkpoint = torch.load('free_spoken_digit/checkpoints/vae_free_spoken_digit_20241125_150005_best.pt')
+    checkpoint = torch.load('free_spoken_digit/checkpoints/vae_free_spoken_digit_20241210_121356_best.pt')
     model.load_state_dict(checkpoint['model_state_dict'])
 
     # Set model to evaluation mode
@@ -75,8 +75,8 @@ def generate_spectrograms(processing_config:ProcessingConfig,device:torch_device
    
     processor = SpectrogramProcessor(processing_config,device=device)
     processor.create_spectrograms_and_save(
-        audio_dir="C:/Users/Acer/work/git/free-spoken-digit-dataset/recordings",
-        save_dir="C:/Users/Acer/work/data/free-audio-spectrogram",
+        audio_dir="C:/Users/Precision/Onus/GitHub/free-spoken-digit-dataset/recordings",
+        save_dir="C:/Users/Precision/Onus/Data/free-audio-spectrogram",
     )
 
 
@@ -117,7 +117,7 @@ if __name__ == '__main__':
     # Let setup data for training
     batch_size = 32 
     data_module = SpectrogramDataModule(
-    data_dir="C:/Users/Acer/work/data/free-audio-spectrogram",
+    data_dir="C:/Users/Precision/Onus/Data/free-audio-spectrogram",
     batch_size=batch_size,
     train_val_split=0.9,
     num_workers=4
@@ -140,12 +140,12 @@ if __name__ == '__main__':
         conv_filters=(128,64,32),
         conv_kernels=(7, 5, 3),
         conv_strides=(1, 2, 2),
-        latent_dim=32,
+        latent_dim=128,
         dropout_rate=0.2,
         noise_factor=0.1,
         seed=42
     ).to(device)
-    print(model.summary(batch_size=batch_size ))
+    #print(model.summary(batch_size=batch_size ))
     
     #Load history    
     #history = main(train_loader,val_loader,model,batch_size=batch_size,device=device)
