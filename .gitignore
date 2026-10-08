@@ -169,3 +169,6 @@ __pycache__
 free_spoken_digit/checkpoints/vae_free_spoken_digit_2*
 free_spoken_digit/checkpoints/vae_free_spoken_digit_8k_best.pt
 free_spoken_digit/viz_outputs/
+
+# Local reference audios (not tracked)
+reference_audios/
