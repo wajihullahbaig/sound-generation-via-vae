@@ -195,6 +195,7 @@ class VAE(nn.Module):
                  conv_strides: List[int] = [2, 2, 2, 2],           # Default strides
                  latent_dim: int = 128,                            # Default latent dim
                  dropout_rate: float = 0.2,
+                 decoder_dropout_rate: Optional[float] = None,
                  noise_factor: float = 0.0,
                  seed: int = 42
                  ):
@@ -212,9 +213,13 @@ class VAE(nn.Module):
             input_shape, conv_filters, conv_kernels, 
             conv_strides, latent_dim, dropout_rate
         )
+        # Dropout in the decoder blurs fine spectral detail (harmonics); it can be
+        # disabled independently of the encoder. Defaults to the encoder rate.
+        if decoder_dropout_rate is None:
+            decoder_dropout_rate = dropout_rate
         self.decoder = Decoder(
             input_shape, conv_filters, conv_kernels, 
-            conv_strides, latent_dim, dropout_rate
+            conv_strides, latent_dim, decoder_dropout_rate
         )
         
         # Initialize weights
@@ -234,22 +239,17 @@ class VAE(nn.Module):
             - log_var: log variance of latent distribution
             - noisy_x: noisy version of input (if noise_factor > 0)
         """
-        # Apply noise transformation
-        noisy_x = self.noise_transform(x)
-        
         # Store original input format flag
         needs_permute = x.size(1) != self.input_shape[2]
-        original_x = x
 
-        # Apply noise transformation
-        noisy_x = self.noise_transform(x)
-        
-        # If no noise was added, set noisy_x to None
-        if self.noise_transform.noise_factor <= 0.0:
-            noisy_x = None
-            x_for_encoder = original_x
-        else:
+        # Noise is a training-time regulariser only (denoising VAE); at eval time
+        # the encoder sees the clean input.
+        if self.training and self.noise_transform.noise_factor > 0.0:
+            noisy_x = self.noise_transform(x)
             x_for_encoder = noisy_x
+        else:
+            noisy_x = None
+            x_for_encoder = x
             
         # Convert to PyTorch format if needed
         if needs_permute:
@@ -257,7 +257,8 @@ class VAE(nn.Module):
             
         # Regular VAE forward pass
         mu, log_var = self.encoder(x_for_encoder)
-        z = self.reparameterize(mu, log_var)
+        # Sample z while training; use the posterior mean for deterministic reconstructions
+        z = self.reparameterize(mu, log_var) if self.training else mu
         reconstruction = self.decoder(z)
         
         # Convert back to original format if needed

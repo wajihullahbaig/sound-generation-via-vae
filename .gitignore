@@ -164,3 +164,8 @@ cython_debug/
 outputs/
 logs/
 __pycache__
+# Training run outputs (timestamped checkpoints and per-epoch plots).
+# The exported weights free_spoken_digit/checkpoints/vae_free_spoken_digit_8k.pt are tracked.
+free_spoken_digit/checkpoints/vae_free_spoken_digit_2*
+free_spoken_digit/checkpoints/vae_free_spoken_digit_8k_best.pt
+free_spoken_digit/viz_outputs/

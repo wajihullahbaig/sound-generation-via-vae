@@ -21,7 +21,10 @@ class VAETrainer:
                  save_dir: str = './checkpoints',
                  reconstruction_save_dir=None,
                  model_name: str = 'vae_mnist',
-                 scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None
+                 scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
+                 kl_weight: float = 1.0,
+                 kl_warmup_epochs: int = 0,
+                 grad_clip: Optional[float] = None
                  ):
         """
         Args:
@@ -31,6 +34,9 @@ class VAETrainer:
             save_dir: Directory to save checkpoints
             model_name: Name of the model for saving
             scheduler: Learning rate scheduler (optional)
+            kl_weight: Final weight (beta) of the KL term
+            kl_warmup_epochs: Linearly ramp the KL weight from 0 to kl_weight over this many epochs
+            grad_clip: Max gradient norm (optional)
         """
         self.model = model
         self.optimizer = optimizer
@@ -39,6 +45,10 @@ class VAETrainer:
         self.reconstruction_save_dir = reconstruction_save_dir
         self.model_name = model_name
         self.scheduler = scheduler
+        self.kl_weight = kl_weight
+        self.kl_warmup_epochs = kl_warmup_epochs
+        self.grad_clip = grad_clip
+        self.current_kl_weight = kl_weight
         
         # Create save directory
         self.save_dir.mkdir(parents=True, exist_ok=True)
@@ -80,7 +90,7 @@ class VAETrainer:
         )
         
         # Total loss
-        total_loss = recon_loss + kl_loss
+        total_loss = recon_loss + self.current_kl_weight * kl_loss
         
         # Metrics for logging
         metrics = {
@@ -105,6 +115,8 @@ class VAETrainer:
             metrics: Dictionary containing average losses for the epoch
         """
         self.model.train()
+        if self.kl_warmup_epochs > 0:
+            self.current_kl_weight = self.kl_weight * min(1.0, (epoch + 1) / self.kl_warmup_epochs)
         total_metrics = defaultdict(float)     
 
         with tqdm(train_loader, desc=f'Epoch {epoch}') as pbar:
@@ -123,6 +135,8 @@ class VAETrainer:
                 
                 # Backward pass
                 loss.backward()
+                if self.grad_clip:
+                    torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.grad_clip)
                 
                 # Update weights
                 self.optimizer.step()
@@ -231,17 +245,26 @@ class VAETrainer:
             
             # Validate
             val_metrics = self.validate(val_loader)
+            val_metrics = {f'val_{k}': v for k, v in val_metrics.items()}
+            
+            if self.scheduler is not None:
+                if isinstance(self.scheduler, optim.lr_scheduler.ReduceLROnPlateau):
+                    self.scheduler.step(val_metrics['val_loss'])
+                else:
+                    self.scheduler.step()
             
             # Update history
             for k, v in train_metrics.items():
                 history[f'train_{k}'].append(v)
             for k, v in val_metrics.items():
-                history[f'val_{k}'].append(v)
+                history[k].append(v)
             
-            # Check if this is the best model
-            is_best = val_metrics['loss'] < self.best_val_loss
+            # Check if this is the best model. During KL warm-up the loss is not
+            # comparable across epochs, so only track the best once beta is final.
+            warmed_up = epoch + 1 >= self.kl_warmup_epochs
+            is_best = warmed_up and val_metrics['val_loss'] < self.best_val_loss
             if is_best:
-                self.best_val_loss = val_metrics['loss']
+                self.best_val_loss = val_metrics['val_loss']
             
             # Save checkpoint
             self.save_checkpoint(epoch, 
@@ -252,7 +275,9 @@ class VAETrainer:
             self.logger.info(
                 f"Epoch {epoch}: "
                 f"Train Loss: {train_metrics['loss']:.4f}, "
-                f"Val Loss: {val_metrics['loss']:.4f}"
+                f"Val Loss: {val_metrics['val_loss']:.4f} "
+                f"(recon {val_metrics['val_recon_loss']:.1f}, kl {val_metrics['val_kl_loss']:.1f}, "
+                f"beta {self.current_kl_weight:.3f}, lr {self.optimizer.param_groups[0]['lr']:.2e})"
             )
             
             # Optional: Visualize reconstructions every N epochs

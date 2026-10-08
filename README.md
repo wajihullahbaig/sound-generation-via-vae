@@ -1,55 +1,80 @@
 # sound-generation-via-vae
-## Using pytorch spectrograms for generating Audios from wav files
-## Creating sounds via VAE, Why use a Computer Vision approach?
-Well the problem lies in the fact that wav files have a depth of information so rich we cant 
-just deep learning networks work. The data is way way too much to handle. For example, a single
-second of wav file sampled at 44.1KHz means more than 44000 samples! That is almost a full training
-dataset in one second of data, that is why we try to leverage something else. How can we squish 
-that much data into a latent space for a single second? Not practical. 
-That is why we convert wav files to spectrograms and use those spectrograms to create audio from
-the latent space. Our simplest choice is a VAE
 
-## Running the code
-### For mnist
-* Go to mnist folder
-* use main.py to run the whole training and evaluation 
-* This will run train/validation and a test
-* Will provide plots for latent space in the end
-* Make sure you have provided the correct checkpointed model
-* visit the folder viz_ouput for reconstructions
-### For audio dataset
-* Go to free_spoken_digit
-* use main.py to create select spectrogram configs and create spectrograms, 
-* Select model input shape (dependent on spectrograms)
-* train/test and validate model
-* for validation use correct spectrogram configs and checkpointed model
-* use create_audios.py to recreate audios from original spectrograms and vae generated spectrograms
-* visit the following
-    * viz_outputs
-    * samples/generated
-    * samples/original
+A convolutional (denoising) Variational Autoencoder in PyTorch that learns to reconstruct and generate spoken digits from mel spectrograms.
 
+Raw audio has too many samples per second to model directly. This project converts each recording into a small mel spectrogram (64 × 256). The VAE learns that image, and Griffin-Lim turns spectrograms back into audio.
 
-## How it works 
 ![VAE Diagram](VAE_.png)
 
-## Spectrogram and reconstruction is lossy
-When we create audio from spectrograms, esp MelSpectrograms, we tend to lose the 
-phase information which is important for recreating the audio. Since we are in the
-log space and we care about magnitude only of the audio - we automatically lose phase
-hence the reconstruction itself is lossy. 
+## Results
 
-## Latent Space Visualization
-![Laten Space](PCA_variance_latent.png)
+The model is trained on the [Free Spoken Digit Dataset](https://github.com/Jakobovski/free-spoken-digit-dataset): 3,000 recordings of the digits 0–9 from 6 speakers.
 
-## Here is the free dataset
-[Free Spoken Audio Dataset](https://github.com/Jakobovski/free-spoken-digit-dataset)
+| Model | Mean spectrogram error on test-set speech (dB) |
+|---|---|
+| Previous model (22.05 kHz, per-file normalization) | 4.15 |
+| **Current model** (8 kHz, global normalization) | **2.61** |
 
+Test-set reconstructions: original on top, VAE output below.
 
-## Need to understand how everything is put together?
-Watch the videos by [Velario Velrado](https://www.youtube.com/watch?v=Ey8IZQl_lKs&list=PL-wATfeyAMNpEyENTc-tVH5tfLGKtSWPp)
+![Reconstructions](assets/reconstructions.png)
 
-You will find his video very important and helps you get through
-* Audio Spectrograms
-* Librosa
-* Keras
+Latent space, projected with PCA and colored by digit:
+
+![Latent space](assets/latent_space.png)
+
+### Audio samples
+
+Listen in [`free_spoken_digit/samples/`](free_spoken_digit/samples):
+
+- `original/` contains the original spectrogram converted back to audio. This is the upper bound on quality.
+- `generated/` contains the same clips encoded and decoded by the VAE.
+- `sampled_from_prior/` contains new sounds decoded from random latent vectors, z ~ N(0, I).
+
+## Usage
+
+```bash
+pip install -r requirements.txt
+# Run from the repo root with the repo on PYTHONPATH
+export PYTHONPATH=.
+```
+
+Set the dataset paths and all hyperparameters in [`free_spoken_digit/configs.py`](free_spoken_digit/configs.py). Training and audio generation share this file.
+
+```bash
+python free_spoken_digit/main.py --generate-spectrograms   # once: audio -> normalized spectrograms
+python free_spoken_digit/main.py --train                   # train; exports best weights to checkpoints/
+python free_spoken_digit/main.py --test                    # plot reconstructions and latent space
+python free_spoken_digit/create_audios.py                  # write reconstructed and generated .wav files
+```
+
+A pretrained model is included at `free_spoken_digit/checkpoints/vae_free_spoken_digit_8k.pt`.
+
+The MNIST version of the same VAE is in [`mnist/`](mnist): run `python mnist/main.py`.
+
+## Design notes
+
+- **Native 8 kHz audio.** The recordings are 8 kHz. Resampling to 22.05 kHz would leave every mel bin above 4 kHz empty.
+- **Global dB normalization.** All spectrograms share one dB range, with an 80 dB floor. Any decoded spectrogram, including one sampled from the prior, can therefore be turned back into audio without per-file statistics.
+- **Training.** Input noise (denoising VAE), KL warm-up over the first 20 epochs, gradient clipping, and a reduce-on-plateau learning-rate schedule. The decoder has no dropout, which keeps harmonics sharp.
+- **Deterministic inference.** At evaluation time the model adds no input noise and decodes the latent mean.
+- **Lossy inversion.** Mel spectrograms discard phase, which Griffin-Lim estimates. Even the original spectrogram sounds slightly metallic when converted back to audio.
+
+## Project layout
+
+```
+arch/               VAE encoder/decoder and input-noise transform
+training/           Trainer (loss, KL warm-up, checkpoints)
+common/             Seeding and plotting helpers
+free_spoken_digit/  Spectrogram pipeline, configs, training and audio scripts
+mnist/              MNIST example
+```
+
+## Contributors
+
+- [wajihullahbaig](https://github.com/wajihullahbaig)
+- [Claude](https://claude.com/claude-code) (Anthropic): 8 kHz spectrogram pipeline, global normalization, training and inference fixes, prior sampling
+
+## Acknowledgements
+
+Inspired by Valerio Velardo's [Generating Sound with Neural Networks](https://www.youtube.com/watch?v=Ey8IZQl_lKs&list=PL-wATfeyAMNpEyENTc-tVH5tfLGKtSWPp) series.

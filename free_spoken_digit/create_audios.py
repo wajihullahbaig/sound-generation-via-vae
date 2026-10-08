@@ -1,12 +1,13 @@
 import torch
 import torchaudio
 from arch.auto_encoder import VAE
-from spectrogram_processor import SpectrogramProcessor, ProcessingConfig
+from spectrogram_processor import SpectrogramProcessor
 from common.seeding import set_seed
 import pickle
 import os
 import numpy as np
 import soundfile as sf
+import configs
 
 
 def load_fsdd(spectrograms_path):
@@ -23,7 +24,7 @@ def load_fsdd(spectrograms_path):
    return x_train, file_paths
 
 def select_spectrograms(spectrograms, file_paths, min_max_values, num_spectrograms=2):
-    sampled_indexes = np.random.choice(range(len(spectrograms)), num_spectrograms)
+    sampled_indexes = np.random.choice(range(len(spectrograms)), num_spectrograms, replace=False)
     sampled_spectrograms = spectrograms[sampled_indexes]
     sampled_file_paths = [os.path.normpath(file_paths[index]) for index in sampled_indexes]
     
@@ -37,10 +38,10 @@ def save_signals_sf(signals, save_dir, sample_rate=22050):
     os.makedirs(save_dir, exist_ok=True)
     for i, signal in enumerate(signals):
         save_path = os.path.join(save_dir, f"{i}.wav")
-        sf.write(save_path, signal,samplerate=22050)
+        sf.write(save_path, signal,samplerate=sample_rate)
         
 
-def save_signals_torch(signals, save_dir, sample_rate=22050, file_paths = None):
+def save_signals_torch(signals, save_dir, sample_rate, file_paths = None):
     os.makedirs(save_dir, exist_ok=True)
     for i, signal in enumerate(signals):
         if file_paths is not None:
@@ -57,60 +58,25 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')    
     set_seed(111)   
     
-    # Configure preprocessing - Ensure you have correct configurations from spectrogram creation
-    processing_configurations = {
-    "64x256": ProcessingConfig(
-        sample_rate=22050,
-        duration=0.7425,      
-        n_fft=2048,        
-        hop_length=64,     
-        n_mels=64,         
-        ),
-    "128x128": ProcessingConfig(
-        sample_rate=22050,
-        duration=0.7425,      
-        n_fft=2048,        
-        hop_length=128,     
-        n_mels=128,         
-        ),    
-    "32x32": ProcessingConfig(
-        sample_rate=22050,
-        duration=0.7425,      
-        n_fft=2048,        
-        hop_length=512,     
-        n_mels=32,         
-        )
-    }
-    
-    selection = "64x256"
-    processing_configurations[selection].print_config()
-    sp = SpectrogramProcessor(processing_configurations[selection],device=device)
+    # Processing and model configurations are shared with main.py via configs.py
+    processing_config = configs.PROCESSING_CONFIGS[configs.SELECTION]
+    processing_config.print_config()
+    # Audio transforms are cheap; CPU also avoids CUDA STFT/NVRTC issues on some setups
+    sp = SpectrogramProcessor(processing_config,device=torch.device('cpu'))
     
     SAVE_DIR_ORIGINAL = "free_spoken_digit/samples/original/"
     SAVE_DIR_GENERATED = "free_spoken_digit/samples/generated/"
-    SPECTROGRAMS_PATH = "C:/Users/Precision/Onus/Data/free-audio-spectrogram"
-    MIN_MAX_VALUES_PATH = "C:/Users/Precision/Onus/Data/free-audio-spectrogram/min_max_values.pkl"
+    SAVE_DIR_SAMPLED = "free_spoken_digit/samples/sampled_from_prior/"
+    SPECTROGRAMS_PATH = configs.SPECTROGRAMS_DIR
+    MIN_MAX_VALUES_PATH = os.path.join(configs.SPECTROGRAMS_DIR, "min_max_values.pkl")
 
-    # Create model - set noise_factor > 0.0 to make VAE a DVAE
-    # Note - The VAE input shape depends on the shape of spectrograms
-    H = processing_configurations[selection].n_mels
-    W = processing_configurations[selection].time_bins
-    model = VAE(
-        input_shape=(H, W,1),
-        conv_filters=(128,64,32),
-        conv_kernels=(7, 5, 3),
-        conv_strides=(1, 2, 2),
-        latent_dim=128,
-        dropout_rate=0.2,
-        noise_factor=0.1,
-        seed=42
-    ).to(device)
+    model = VAE(**configs.build_model_kwargs()).to(device)
      
     # If you have a saved model, load it
-    checkpoint = torch.load('free_spoken_digit/checkpoints/vae_free_spoken_digit_20241210_121356_best.pt')
+    checkpoint = torch.load(configs.CHECKPOINT_PATH, map_location=device)
     model.load_state_dict(checkpoint['model_state_dict'])
 
-    # Set model to evaluation mode
+    # Set model to evaluation mode: no input noise, z = mu
     model.eval()
     
     # Load spectrograms + min max values
@@ -128,24 +94,33 @@ if __name__ == "__main__":
     )
 
     # Generate audio from original spectrograms
-    originaL_signals_recreated = sp.create_audio_from_spectrograms(sampled_specs, sampled_min_max_values)              
+    original_signals_recreated = sp.create_audio_from_spectrograms(sampled_specs, sampled_min_max_values)              
     
     # Generate audio from spectrograms using the model
-    # Use the original audios to sample the latent space and create spectrograms
-    # Then perform the reconsturction
-    sampled_specs = torch.from_numpy(sampled_specs).to(device)
-    model.eval()
+    # Encode the original spectrograms, decode from the latent means,
+    # then perform the reconstruction
     with torch.no_grad():    
+        sampled_specs = torch.from_numpy(sampled_specs).to(device)
         # Add batch dimension if not present
         if sampled_specs.dim() == 3:
             sampled_specs = sampled_specs.unsqueeze(0)
-    vae_generated_spectrograms, _, _, _ = model(sampled_specs)                
-    vae_generated_spectrograms = vae_generated_spectrograms.detach().cpu().numpy()
+        vae_generated_spectrograms, _, _, _ = model(sampled_specs)                
+    vae_generated_spectrograms = vae_generated_spectrograms.cpu().numpy()
     vae_recreated_signals = sp.create_audio_from_spectrograms(vae_generated_spectrograms, sampled_min_max_values)      
     
+    # Generate brand new sounds by decoding random latent vectors z ~ N(0, I).
+    # Possible because spectrograms share one global dB range (no per-file min/max needed).
+    num_prior_samples = 5
+    with torch.no_grad():
+        z = torch.randn(num_prior_samples, model.latent_dim, device=device)
+        prior_spectrograms = model.decoder(z).cpu().numpy()
+    global_min_max = sampled_min_max_values[0]
+    prior_signals = sp.create_audio_from_spectrograms(prior_spectrograms, [global_min_max] * num_prior_samples)
 
     # Save audio signals
-    save_signals_torch(vae_recreated_signals, SAVE_DIR_GENERATED, file_paths=sampled_file_paths)
-    save_signals_torch(originaL_signals_recreated, SAVE_DIR_ORIGINAL, file_paths=sampled_file_paths)
+    sample_rate = processing_config.sample_rate
+    save_signals_torch(vae_recreated_signals, SAVE_DIR_GENERATED, sample_rate, file_paths=sampled_file_paths)
+    save_signals_torch(original_signals_recreated, SAVE_DIR_ORIGINAL, sample_rate, file_paths=sampled_file_paths)
+    save_signals_torch(prior_signals, SAVE_DIR_SAMPLED, sample_rate)
     
     print("Completed!")

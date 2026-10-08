@@ -2,14 +2,10 @@ import torch
 import torchaudio
 from torch import device as torch_device
 from pathlib import Path
-from typing import Optional, Tuple, Dict, Union
+from typing import Optional
 from dataclasses import dataclass
 import numpy as np
 import pickle
-import os
-import matplotlib.pyplot as plt
-from datetime import datetime
-from visualizations import show_spectrogram
 
 
 @dataclass
@@ -21,14 +17,20 @@ class ProcessingConfig:
     hop_length: int = 128
     n_mels: int = 64   
     duration: float = 0.74
+    f_min: float = 0.0
+    f_max: Optional[float] = None   # None -> Nyquist (sample_rate / 2)
+    top_db: float = 80.0            # dynamic range kept below the dataset peak
+    griffin_lim_iters: int = 100
         
     
     def __post_init__(self):
         """Validate configuration and verify exact bin count."""
+        if self.f_max is None:
+            self.f_max = self.sample_rate / 2
         self.total_samples = int(self.sample_rate * self.duration)
         self.time_bins = int((self.total_samples + self.hop_length) // self.hop_length)        
         self.time_resolution = (self.hop_length / self.sample_rate * 1000)
-        self.frequency_resolution= (self.sample_rate / 2 / self.n_mels)                               
+        self.frequency_resolution= ((self.f_max - self.f_min) / self.n_mels)                               
         
         if self.n_fft < 2 * self.hop_length:
             raise ValueError(f"n_fft ({self.n_fft}) should be >= 2 * hop_length ({2 * self.hop_length})")
@@ -40,7 +42,7 @@ class ProcessingConfig:
         print(f"Total samples: {self.total_samples}")
         print(f"Hop length: {self.hop_length}")
         print(f"Time bins: {self.time_bins}")
-        print(f"Mel bins: {self.n_mels}")
+        print(f"Mel bins: {self.n_mels} ({self.f_min:.0f}-{self.f_max:.0f} Hz)")
         print(f"Time resolution: {self.time_resolution:.2f} ms per bin")
         print(f"Frequency resolution: {self.frequency_resolution:.2f} Hz per bin")
         print(f"Output shape - mels x time_bin - > HxW: {self.n_mels} x {self.time_bins}")
@@ -59,21 +61,26 @@ class SpectrogramProcessor:
         n_fft= config.n_fft,
         hop_length=config.hop_length,
         n_mels=config.n_mels,
+        f_min=config.f_min,
+        f_max=config.f_max,
         power=2.0
         ).to(self.device)
+        self.amplitude_to_db = torchaudio.transforms.AmplitudeToDB(stype='power').to(self.device)
         # Storage for min max values per audio file. We will use this in reconstruction of audio
         self.min_max_values = {}
         
         self.inverse_mel_scale_transform = torchaudio.transforms.InverseMelScale(
             n_stft=self.config.n_fft // 2 + 1,
             n_mels=self.config.n_mels,
-            sample_rate=self.config.sample_rate
+            sample_rate=self.config.sample_rate,
+            f_min=self.config.f_min,
+            f_max=self.config.f_max
         ).to(self.device)
 
         self.griffin_lim_transform = torchaudio.transforms.GriffinLim(
             n_fft=self.config.n_fft,
             hop_length=self.config.hop_length,
-            n_iter=100
+            n_iter=self.config.griffin_lim_iters
         ).to(self.device)
 
            
@@ -93,14 +100,9 @@ class SpectrogramProcessor:
         # Now we can invert the mel spectrogram
         y_reverse = self.griffin_lim_transform(self.inverse_mel_scale_transform(S_reverse))
         
-        # Now we can enhance volume
-        volume_enhance_factor = 2.0  # Adjust this value to increase or decrease volume
-        y_reverse_enhanced = y_reverse * volume_enhance_factor
-
-        # Clip the enhanced audio to avoid distortion
-        y_reverse_enhanced = torch.clamp(y_reverse_enhanced, -1.0, 1.0)
-
-        return y_reverse_enhanced
+        # Peak-normalise instead of a fixed gain + hard clip (which distorts loud outputs)
+        peak = y_reverse.abs().max().clamp(min=1e-8)
+        return y_reverse * (0.9 / peak)
     
     def create_audio_from_spectrograms(self, S_db: list, min_max_values:list) -> torch.Tensor:                
         signals = []
@@ -111,7 +113,8 @@ class SpectrogramProcessor:
             signals.append(recreated_signal)
         return signals
             
-    def create_spectrogram_from_audio(self, waveform: torch.Tensor, sr: int) -> Tuple[torch.Tensor, float, float]:
+    def create_spectrogram_from_audio(self, waveform: torch.Tensor, sr: int) -> torch.Tensor:
+        """Return the (1, n_mels, time_bins) mel spectrogram in dB."""
         # Move waveform to the correct device first
         waveform = waveform.to(self.device)
         
@@ -136,21 +139,18 @@ class SpectrogramProcessor:
         # Create the Mel Spectrograms
         S = self.mel_spectrogram_transform(waveform)  # (channel, n_mels, time)
         
-        # Move AmplitudeToDB transform to the same device
-        amplitude_to_db = torchaudio.transforms.AmplitudeToDB().to(self.device)
-        S_db = amplitude_to_db(S)
+        S_db = self.amplitude_to_db(S)
         
         if S_db.shape[1] != self.config.n_mels:
             raise ValueError(f"Expected {self.config.n_mels} mel bins, but got {S_db.shape[1]}")
         if S_db.shape[2] != self.config.time_bins:
             raise ValueError(f"Expected {self.config.time_bins} time bins, but got {S_db.shape[2]}")
         
-        # Get min/max, then normalize the spectrogram
-        S_min = torch.min(S_db)
-        S_max = torch.max(S_db)
-        S_normalized = (S_db - S_min) / (S_max - S_min)
-        
-        return S_normalized, S_min, S_max
+        return S_db
+
+    def normalize(self, S_db: torch.Tensor, min_val: float, max_val: float) -> torch.Tensor:
+        """Map dB values to [0, 1], clipping everything below min_val."""
+        return ((S_db.clamp(min=min_val, max=max_val) - min_val) / (max_val - min_val))
 
     def create_spectrograms_and_save(self, 
                             audio_dir: str, 
@@ -162,26 +162,35 @@ class SpectrogramProcessor:
             save_dir.mkdir(parents=True, exist_ok=True)
             
             # Process all audio files
-            audio_files = list(Path(audio_dir).rglob(f"*{audio_ext}"))
+            audio_files = sorted(Path(audio_dir).rglob(f"*{audio_ext}"))
+            spectrograms_db = []
             for audio_path in audio_files:
-                # Process audio to mel spectrogram
-                # Load audio
                 waveform, sr = torchaudio.load(str(audio_path))
-                mel_spec, waveform_min, waveform_max = self.create_spectrogram_from_audio(waveform,sr)
-                                
-                # Generate save path
+                spectrograms_db.append(self.create_spectrogram_from_audio(waveform, sr))
+            
+            # Normalise with ONE dataset-wide dB range instead of per-file min/max:
+            # - every pixel value means the same loudness across the dataset, so the
+            #   VAE does not have to model per-file scaling
+            # - silence (zero padding -> -100 dB) is clipped at peak - top_db rather than
+            #   stretching the useful dynamic range
+            # - spectrograms decoded from arbitrary latent vectors can be turned back
+            #   into audio without any per-file statistics
+            global_max = max(S.max().item() for S in spectrograms_db)
+            global_min = global_max - self.config.top_db
+            
+            for audio_path, S_db in zip(audio_files, spectrograms_db):
+                mel_spec = self.normalize(S_db, global_min, global_max)
                 save_path = save_dir / f"{audio_path.stem}.npy"
-                
-                # Save spectrogram
                 np.save(save_path, mel_spec.cpu().numpy())
                 
-                # Store min/max values
+                # Kept per file for compatibility with create_audios.py
                 self.min_max_values[str(save_path)] = {
-                   "min": waveform_min.item(),
-                    "max": waveform_max.item()
+                    "min": global_min,
+                    "max": global_max
                 }
                 
-                print(f"Processed and saved: {save_path}")
+            print(f"Processed and saved {len(audio_files)} spectrograms to {save_dir} "
+                  f"(dB range {global_min:.1f} .. {global_max:.1f})")
             
             # Save min/max values
             with open(save_dir / "min_max_values.pkl", "wb") as f:
