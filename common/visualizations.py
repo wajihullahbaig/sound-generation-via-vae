@@ -5,6 +5,7 @@ import torch
 from sklearn.decomposition import PCA
 import numpy as np
 from typing import Optional
+from matplotlib.ticker import FormatStrFormatter, LogLocator, NullFormatter
 
        
 def visualize_reconstructions(
@@ -251,18 +252,19 @@ def plot_training_curves(histories: dict, save_path: str) -> None:
         for key, label, color in [('train_loss', 'Train', STYLE['series'][0]),
                                   ('val_loss', 'Validation (EMA)', STYLE['series'][1])]:
             ax.plot(h['step'], h[key], color=color, linewidth=2, label=label)
-            ax.annotate(label, (h['step'][-1], h[key][-1]), xytext=(6, 0), textcoords='offset points',
-                        va='center', fontsize=9, color=STYLE['muted'])
         ax.set_title(name, loc='left', fontsize=12, color=STYLE['text'])
         ax.set_xlabel('Training step', color=STYLE['muted'])
-        ax.set_ylabel('Loss (MSE)', color=STYLE['muted'])
-        ax.grid(True, axis='y', color=STYLE['grid'], linewidth=0.8)
+        ax.set_ylabel('Loss (MSE, log scale)', color=STYLE['muted'])
+        ax.set_yscale('log')                      # the first validations would otherwise flatten the curve
+        ax.yaxis.set_major_locator(LogLocator(subs=(1, 2, 5)))
+        ax.yaxis.set_major_formatter(FormatStrFormatter('%g'))
+        ax.yaxis.set_minor_formatter(NullFormatter())
+        ax.grid(True, axis='y', which='both', color=STYLE['grid'], linewidth=0.8)
         ax.tick_params(colors=STYLE['muted'], length=0)
         for side in ['top', 'right', 'left']:
             ax.spines[side].set_visible(False)
         ax.spines['bottom'].set_color(STYLE['grid'])
         ax.legend(frameon=False, fontsize=9, labelcolor=STYLE['muted'], loc='upper right')
-        ax.margins(x=0.12)
     fig.tight_layout()
     fig.savefig(save_path, dpi=150, bbox_inches='tight', facecolor=STYLE['surface'])
     plt.close(fig)
@@ -317,5 +319,26 @@ def plot_confusion_matrices(matrices: dict, save_path: str) -> None:
         _style_axis(ax, f"{name}: accuracy {np.trace(m) / 10:.0%}")
         ax.spines['bottom'].set_visible(False)
     fig.colorbar(image, ax=axes, fraction=0.025, pad=0.02, label='Share of samples')
+    fig.savefig(save_path, dpi=150, bbox_inches='tight', facecolor=STYLE['surface'])
+    plt.close(fig)
+
+
+def plot_audio_comparison(signals: dict, sample_rate: int, save_path: str, n_fft: int = 256, hop: int = 16) -> None:
+    """High-resolution linear spectrograms of several renderings of one clip ({name: waveform}).
+
+    A finer STFT than the model's reveals phase artefacts (smeared, buzzy harmonics) that the mel hides.
+    """
+    fig, axes = plt.subplots(1, len(signals), figsize=(5 * len(signals), 3.6), facecolor=STYLE['surface'], sharey=True)
+    window = torch.hann_window(n_fft)
+    for ax, (name, wav) in zip(axes, signals.items()):
+        wav = torch.as_tensor(wav, dtype=torch.float32)
+        spec = torch.view_as_real(torch.stft(wav / wav.abs().max(), n_fft, hop, window=window, return_complex=True))
+        db = 10 * torch.log10(spec.pow(2).sum(-1).clamp(min=1e-10))
+        extent = [0, len(wav) / sample_rate, 0, sample_rate / 2000]
+        ax.imshow((db - db.max()).clamp(min=-80), origin='lower', aspect='auto', cmap='magma', extent=extent)
+        _style_axis(ax, name)
+        ax.set_xlabel('Time (s)', color=STYLE['muted'])
+    axes[0].set_ylabel('Frequency (kHz)', color=STYLE['muted'])
+    fig.tight_layout()
     fig.savefig(save_path, dpi=150, bbox_inches='tight', facecolor=STYLE['surface'])
     plt.close(fig)

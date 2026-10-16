@@ -71,14 +71,14 @@ def load_classifier(train: tuple, val: tuple, device: torch.device, retrain: boo
     if retrain or not os.path.exists(configs.CLASSIFIER_CHECKPOINT):
         model = train_classifier(train, val, device)
         torch.save({'model_state_dict': model.state_dict()}, configs.CLASSIFIER_CHECKPOINT)
-    model.load_state_dict(torch.load(configs.CLASSIFIER_CHECKPOINT, map_location=device)['model_state_dict'])
+    model.load_state_dict(torch.load(configs.CLASSIFIER_CHECKPOINT, map_location=device, weights_only=True)['model_state_dict'])
     return model.eval()
 
 
 def load_vae(device: torch.device) -> VAE:
     """Load the trained VAE."""
     vae = VAE(**configs.build_model_kwargs()).to(device)
-    vae.load_state_dict(torch.load(configs.CHECKPOINT_PATH, map_location=device)['model_state_dict'])
+    vae.load_state_dict(torch.load(configs.CHECKPOINT_PATH, map_location=device, weights_only=True)['model_state_dict'])
     return vae.eval()
 
 
@@ -98,24 +98,14 @@ def score(name: str, samples: torch.Tensor, ms: float, classifier: DigitClassifi
         result['accuracy'] = (preds == labels).float().mean().item()
         confusion = torch.zeros(10, 10, device=labels.device).index_put_((labels, preds), torch.tensor(1.0, device=labels.device), accumulate=True)
         result['confusion'] = (confusion / confusion.sum(1, keepdim=True)).tolist()
-    logging.info(f"{name}: FD {result['fd']:.2f}, accuracy {_fmt_pct(result['accuracy'])}, "
-                 f"{_fmt_ms(ms)} ms/sample")
+    logging.info(f"{name}: FD {result['fd']:.2f}" + (f", accuracy {result['accuracy']:.1%}" if labels is not None else "")
+                 + (f", {ms:.1f} ms/sample" if ms is not None else ""))
     return result
-
-
-def _fmt_pct(value) -> str:
-    """Percentage or n/a."""
-    return 'n/a' if value is None else f"{value:.1%}"
-
-
-def _fmt_ms(value) -> str:
-    """Milliseconds or n/a."""
-    return 'n/a' if value is None else f"{value:.1f}"
 
 
 def save_outputs(results: list, grid: dict) -> None:
     """Write the results JSON, figures and the README comparison tables."""
-    histories = {NAMES[k]: torch.load(configs.GENERATIVE_CHECKPOINTS[k], map_location='cpu')['history'] for k in NAMES}
+    histories = {NAMES[k]: torch.load(configs.GENERATIVE_CHECKPOINTS[k], map_location='cpu', weights_only=True)['history'] for k in NAMES}
     plot_training_curves(histories, 'assets/generative_training.png')
     plot_sample_grid(grid, 'assets/generated_samples.png', col_labels=[f'Digit {d}' for d in range(10)])
     plot_metric_bars(results, 'assets/generative_metrics.png')
@@ -128,7 +118,7 @@ def save_outputs(results: list, grid: dict) -> None:
         with open('assets/vae_results.json') as f:
             sections['vae'] = vae_table(json.load(f))
     update_readme(sections)
-    print(sections['generation'])
+    logging.info(f"Wrote figures to assets/ and updated README sections: {', '.join(sections)}")
 
 
 def main(retrain_classifier: bool) -> None:
@@ -141,8 +131,9 @@ def main(retrain_classifier: bool) -> None:
     test_feats, _ = embed(classifier, test[0])
     labels = torch.arange(10, device=device).repeat_interleave(SAMPLES_PER_DIGIT)
 
-    results = [score('Real data (train split)', train[0], None, classifier, test_feats)]
+    results = [score('Real recordings (reference)', train[0], None, classifier, test_feats)]
     results[0]['accuracy'] = accuracy(classifier, *test)
+    logging.info(f"Classifier accuracy on real test clips: {results[0]['accuracy']:.1%}")
     vae = load_vae(device)
     samples, ms = timed(lambda: sample_vae(vae, len(labels)), len(labels))
     results.append(score('VAE (prior samples)', samples, ms, classifier, test_feats))

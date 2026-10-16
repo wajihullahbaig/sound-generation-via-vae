@@ -1,0 +1,2 @@
+2026-10-16 21:02:38 | INFO | Logging to logs\vae_20261016_210238.log
+2026-10-16 21:03:05 | INFO | Test reconstruction error: 3.69 dB (speech), 2.23 dB (all bins)

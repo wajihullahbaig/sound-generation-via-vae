@@ -2,7 +2,7 @@
 
 Generating spoken digits from mel spectrograms with three generative models in PyTorch: a **convolutional VAE**, a **DDPM** (denoising diffusion) and **Flow Matching**. All three share one spectrogram pipeline.
 
-Raw audio has too many samples per second to model directly. Each recording becomes a small mel spectrogram (64 × 256), the models learn that image, and Griffin-Lim turns generated spectrograms back into audio.
+Raw audio has too many samples per second to model directly. Each recording becomes a small mel spectrogram (64 × 256), the models learn that image, and a neural vocoder turns generated spectrograms back into audio.
 
 ```mermaid
 flowchart LR
@@ -10,22 +10,30 @@ flowchart LR
     B --> C["dB relative to clip peak<br/>clip at −80 dB → [0, 1]"]
     C --> D["VAE · DDPM · Flow Matching"]
     D -->|reconstruct / sample| E["Generated spectrogram"]
-    E --> F["Inverse mel + Griffin-Lim"]
+    E --> F["Neural vocoder (Vocos-style)"]
     F --> G["WAV"]
 ```
 
 ## Results
+
+**[Read the full comparison report →](REPORT.md)**: findings, per-digit analysis, training dynamics, vocoder evaluation, training cost and limitations.
 
 All models are trained on the [Free Spoken Digit Dataset](https://github.com/Jakobovski/free-spoken-digit-dataset): 3,000 recordings of the digits 0–9 from 6 speakers. The splits are 2,160 clips for training, 240 for validation and 600 for testing.
 
 ### Generation: VAE vs DDPM vs Flow Matching
 
 <!-- results:generation -->
-_Filled in by `evaluate_generative.py`._
+| Model | Fréchet distance ↓ | Digit accuracy ↑ | ms / sample ↓ |
+|---|---|---|---|
+| Real recordings (reference) | 0.17 | 98.7% | — |
+| VAE (prior samples) | 16.26 | — | 1.2 |
+| DDPM | 6.39 | 95.1% | 218.6 |
+| Flow Matching | **4.13** | 99.9% | 229.8 |
 <!-- /results:generation -->
 
 - **Fréchet distance:** distance between generated and real test spectrograms in the feature space of a digit classifier trained on real data (as in FID and FAD). Lower is better.
 - **Digit accuracy:** how often that classifier hears the digit that was requested. The VAE is unconditional, so it has no score here.
+- **Reference row:** compares real training clips with real test clips. It shows the best achievable Fréchet distance and the classifier's own accuracy on real test recordings.
 - **Speed:** measured on an RTX 5000 in batches of 100. DDPM and Flow Matching both use 100 network evaluations per sample, plus classifier-free guidance (scale 2).
 
 One sample per digit (uncurated; the VAE row is random digits):
@@ -43,12 +51,36 @@ The confusion matrices show which digit each model actually produced for every r
 ### VAE reconstruction
 
 <!-- results:vae -->
-_Filled in by `evaluate_generative.py`._
+| VAE version | Spectrogram error on speech (dB) ↓ |
+|---|---|
+| v1: 22.05 kHz, per-file min/max normalisation | 4.15 |
+| v2: 8 kHz, dataset-wide dB range | 2.61 |
+| **v3 (current): 8 kHz, per-clip peak normalisation** | **3.69** |
+
+_The rows are not directly comparable. v1 and v2 clipped quiet speakers' low-level detail to the floor, which is trivially easy to reconstruct. v3 keeps the full 80 dB below each clip's own peak, so the same 60 dB "speech" region now includes much more quiet detail. The v3 number is the honest baseline for future changes._
 <!-- /results:vae -->
 
 ![Reconstructions](assets/reconstructions.png)
 
 ![Latent space](assets/latent_space.png)
+
+### Spectrogram → audio: Griffin-Lim vs neural vocoder
+
+A spectrogram stores only *how much* energy each frequency has, not its phase. Griffin-Lim **guesses** the phase iteratively, which produces the metallic, robotic sound. The vocoder **learns** the phase (and the detail lost by the 64-bin mel) from the real recordings. The table scores both on test-set spectrograms against the true recordings:
+
+<!-- results:vocoder -->
+| Spectrogram → audio | PESQ (narrowband, 1–4.5) ↑ | STOI (0–1) ↑ | ms / clip (CPU) ↓ |
+|---|---|---|---|
+| Griffin-Lim (256 iterations) | 1.97 | 0.416 | 336.0 |
+| Neural vocoder | 3.42 | 0.484 | 10.2 |
+<!-- /results:vocoder -->
+
+- **PESQ:** ITU-T P.862 perceived speech quality, narrowband mode for 8 kHz.
+- **STOI:** intelligibility.
+
+The figure shows one test clip at a finer STFT than the models use. Griffin-Lim's phase errors appear as smeared, wavy harmonics and noise in the silent tail.
+
+![Vocoder comparison](assets/vocoder_comparison.png)
 
 ### Audio samples
 
@@ -60,6 +92,7 @@ Listen in [`free_spoken_digit/samples/`](free_spoken_digit/samples):
 | `sampled_from_prior/` | VAE samples decoded from random latents z ~ N(0, I) |
 | `generated/` | VAE reconstructions of real clips |
 | `original/` | The original spectrograms converted straight back to audio, the upper bound on quality |
+| `vocoder_comparison/` | Test clips as recording / Griffin-Lim / vocoder |
 
 ## Architectures
 
@@ -140,6 +173,23 @@ flowchart LR
     DDPM ~~~ FM
 ```
 
+### Neural vocoder
+
+```mermaid
+flowchart LR
+    M["Mel spectrogram<br/>64 × 256 frames"] --> E["Conv1d 7 → 256"]
+    E --> B["8 × ConvNeXt block<br/>depthwise conv 7 · LayerNorm · MLP 768"]
+    B --> H["Linear → magnitude + phase<br/>65 bins per frame"]
+    H --> I["Inverse STFT<br/>n_fft 128 · hop 24"]
+    I --> W["Waveform<br/>6,120 samples"]
+    W -. "training only" .-> D["Multi-resolution spectrogram<br/>discriminators"]
+```
+
+The vocoder runs at frame rate (256 steps per clip) and produces the waveform with a single inverse FFT, so it needs no sample-by-sample upsampling. It has 3.3M parameters and is trained on real (spectrogram, waveform) pairs from the training split with:
+- mel L1 loss;
+- multi-resolution STFT loss;
+- adversarial and feature-matching losses after a 2k-step warm-up.
+
 ### Evaluation classifier
 
 ```mermaid
@@ -165,6 +215,7 @@ Run everything end to end (VAE → DDPM → Flow Matching → comparison report)
 ```bash
 python free_spoken_digit/run_pipeline.py                     # all stages
 python free_spoken_digit/run_pipeline.py --from ddpm --resume  # continue an interrupted stage, then the rest
+python free_spoken_digit/run_pipeline.py --only vocoder vae_audio samples report   # selected stages
 ```
 
 Or run the stages one by one:
@@ -173,6 +224,7 @@ Or run the stages one by one:
 python free_spoken_digit/main.py --generate-spectrograms                  # once: audio -> spectrograms
 python free_spoken_digit/main.py --train                                  # VAE (early stopping)
 python free_spoken_digit/main.py --test                                   # VAE figures -> assets/
+python free_spoken_digit/train_vocoder.py --train --evaluate              # vocoder + Griffin-Lim comparison
 python free_spoken_digit/create_audios.py                                 # VAE .wav samples
 python free_spoken_digit/train_generative.py --method ddpm --train --sample
 python free_spoken_digit/train_generative.py --method flow --train --sample
@@ -194,15 +246,15 @@ Every run logs to the console and to `logs/<run>_<timestamp>.log`. The logs of t
   Only the best checkpoint is kept.
 - **Training efficiency.** The whole dataset sits on the GPU, with mixed precision, EMA weights (decay 0.9995) and gradient clipping.
 - **Reproducibility.** Seeds are fixed, cuDNN is deterministic, and all settings live in `configs.py`.
-- **Lossy inversion.** Mel spectrograms discard phase, which Griffin-Lim estimates, so even real spectrograms sound slightly metallic when converted back to audio.
+- **Neural vocoder instead of Griffin-Lim.** Mel spectrograms discard phase. Griffin-Lim's estimate sounds metallic; the vocoder learns phase from real speech. All audio is rendered with it, and Griffin-Lim is the fallback when no vocoder checkpoint exists. Rendering runs on the CPU in about 16 ms per clip, versus about 550 ms for Griffin-Lim.
 
 ## Project layout
 
 ```
-arch/               VAE, U-Net and evaluation-classifier networks
+arch/               VAE, U-Net, vocoder and evaluation-classifier networks
 generative/         DDPM and Flow Matching (loss + sampler)
-training/           VAE trainer, generative trainer, early stopping
-common/             Seeding, logging, metrics and plotting helpers
+training/           VAE, generative and vocoder trainers, early stopping
+common/             Seeding, logging, audio ops, metrics and plotting helpers
 free_spoken_digit/  Spectrogram pipeline, configs, training / sampling / evaluation scripts
 mnist/              MNIST example of the VAE
 logs/               Training logs of the published models
@@ -211,7 +263,7 @@ logs/               Training logs of the published models
 ## Contributors
 
 - [wajihullahbaig](https://github.com/wajihullahbaig)
-- [Claude](https://claude.com/claude-code) (Anthropic): spectrogram pipeline and normalization, DDPM and Flow Matching, evaluation, training fixes
+- [Claude](https://claude.com/claude-code) (Anthropic): spectrogram pipeline and normalization, DDPM and Flow Matching, neural vocoder, evaluation, training fixes
 
 ## Acknowledgements
 

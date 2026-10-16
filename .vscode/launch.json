@@ -2,7 +2,7 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Pipeline: all methods + report",
+            "name": "Pipeline: all methods + vocoder + report",
             "type": "debugpy",
             "request": "launch",
             "program": "free_spoken_digit/run_pipeline.py",
@@ -31,7 +31,7 @@
             }
         },
         {
-            "name": "Pipeline: resume DDPM (then Flow + report)",
+            "name": "Pipeline: resume DDPM (then Flow, samples, report)",
             "type": "debugpy",
             "request": "launch",
             "program": "free_spoken_digit/run_pipeline.py",
@@ -48,7 +48,7 @@
             }
         },
         {
-            "name": "Pipeline: resume Flow Matching (then report)",
+            "name": "Pipeline: resume Flow Matching (then samples, report)",
             "type": "debugpy",
             "request": "launch",
             "program": "free_spoken_digit/run_pipeline.py",
@@ -72,6 +72,45 @@
             "args": [
                 "--from",
                 "report"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "Pipeline: vocoder + re-render all audio + report",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/run_pipeline.py",
+            "args": [
+                "--only",
+                "vocoder",
+                "vae_audio",
+                "samples",
+                "report"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "Pipeline: resume vocoder (then audio + report)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/run_pipeline.py",
+            "args": [
+                "--only",
+                "vocoder",
+                "vae_audio",
+                "samples",
+                "report",
+                "--resume"
             ],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
@@ -204,6 +243,54 @@
                 "--train",
                 "--resume",
                 "--sample"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "Vocoder: train + evaluate",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/train_vocoder.py",
+            "args": [
+                "--train",
+                "--evaluate"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "Vocoder: resume training + evaluate",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/train_vocoder.py",
+            "args": [
+                "--train",
+                "--resume",
+                "--evaluate"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "Vocoder: evaluate vs Griffin-Lim",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/train_vocoder.py",
+            "args": [
+                "--evaluate"
             ],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",

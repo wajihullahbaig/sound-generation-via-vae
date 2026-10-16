@@ -9,7 +9,8 @@ from common.logging_utils import setup_logging
 from common.seeding import set_seed
 from generative import build_method
 from spectrogram_data_module import SpectrogramDataModule
-from spectrogram_processor import SpectrogramProcessor, load_db_range
+from audio_renderer import build_processor
+from spectrogram_processor import load_db_range
 from training.generative_trainer import GenerativeTrainer
 
 
@@ -54,7 +55,7 @@ def train(name: str, device: torch.device, resume: bool = False) -> None:
 def render_audio(name: str, device: torch.device, out_dir: str = "free_spoken_digit/samples") -> None:
     """Generate one sample per digit and write it as a .wav file."""
     config = configs.PROCESSING_CONFIGS[configs.SELECTION]
-    processor = SpectrogramProcessor(config, device=torch.device('cpu'))
+    processor = build_processor()
     db_min, db_max = load_db_range(configs.SPECTROGRAMS_DIR)
     spectrograms = generate(load_method(name, device), name, torch.arange(10, device=device)).cpu()
 

@@ -1,7 +1,7 @@
 import torch
 import torchaudio
 from arch.auto_encoder import VAE
-from spectrogram_processor import SpectrogramProcessor
+from audio_renderer import build_processor
 from common.seeding import set_seed
 import pickle
 import os
@@ -62,7 +62,7 @@ if __name__ == "__main__":
     processing_config = configs.PROCESSING_CONFIGS[configs.SELECTION]
     processing_config.print_config()
     # Audio transforms are cheap; CPU also avoids CUDA STFT/NVRTC issues on some setups
-    sp = SpectrogramProcessor(processing_config,device=torch.device('cpu'))
+    sp = build_processor()
     
     SAVE_DIR_ORIGINAL = "free_spoken_digit/samples/original/"
     SAVE_DIR_GENERATED = "free_spoken_digit/samples/generated/"

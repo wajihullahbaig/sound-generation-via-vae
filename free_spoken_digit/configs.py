@@ -83,6 +83,29 @@ GENERATIVE_CHECKPOINTS = {
 }
 CLASSIFIER_CHECKPOINT = "free_spoken_digit/checkpoints/digit_classifier_8k.pt"
 
+# Neural vocoder (Vocos-style): mel spectrogram -> waveform, replacing Griffin-Lim
+VOCODER_CONFIG = dict(
+    n_mels=64,
+    dim=256,
+    hidden=768,
+    layers=8,
+    n_fft=128,             # synthesis STFT; hop must equal the spectrogram hop
+    hop_length=24,
+)
+VOCODER_TRAIN_CONFIG = dict(
+    steps=40_000,          # upper bound; early stopping usually ends sooner
+    batch_size=32,
+    crop_frames=64,        # random 0.19 s crops: fast steps, many distinct examples
+    lr=5e-4,
+    gan_start=2000,        # reconstruction-only warm-up before adversarial training
+    lambda_mel=45.0,
+    lambda_fm=2.0,
+    eval_every=1000,
+    patience=6,
+    log_every=200,
+)
+VOCODER_CHECKPOINT = "free_spoken_digit/checkpoints/vocoder_8k.pt"
+
 
 def build_model_kwargs(selection: str = SELECTION) -> dict:
     config = PROCESSING_CONFIGS[selection]

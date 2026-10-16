@@ -57,9 +57,10 @@ class ProcessingConfig:
 class SpectrogramProcessor:
     """Creates mel spectrograms"""
     
-    def __init__(self, config: ProcessingConfig,device:torch_device):
+    def __init__(self, config: ProcessingConfig, device: torch_device, vocoder: Optional[torch.nn.Module] = None):
         self.device = device
         self.config = config
+        self.vocoder = vocoder      # neural vocoder; Griffin-Lim is used when None
         self.num_samples = int(config.sample_rate * config.duration)
         
         # Initialize transforms we can use from Pytorch        
@@ -104,8 +105,12 @@ class SpectrogramProcessor:
         # Second, we need to convert back from dB to power
         S_reverse = torch.exp(spectrogram_denormalized * 0.11512925464970229)  # 10^(x/10) = e^(x * ln(10)/10)
 
-        # Now we can invert the mel spectrogram
-        y_reverse = self.griffin_lim_transform(self.inverse_mel_scale_transform(S_reverse))
+        # Invert the mel spectrogram: neural vocoder if available (learns phase), else Griffin-Lim (estimates it)
+        if self.vocoder is not None:
+            with torch.no_grad():
+                y_reverse = self.vocoder(S_db.to(next(self.vocoder.parameters()).device)).to(self.device)
+        else:
+            y_reverse = self.griffin_lim_transform(self.inverse_mel_scale_transform(S_reverse))
         
         # Peak-normalise instead of a fixed gain + hard clip (which distorts loud outputs)
         peak = y_reverse.abs().max().clamp(min=1e-8)

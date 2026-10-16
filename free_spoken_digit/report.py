@@ -28,6 +28,18 @@ def vae_table(vae_results: dict) -> str:
     lines = ['| VAE version | Spectrogram error on speech (dB) ↓ |', '|---|---|']
     lines += [f"| {name} | {err:.2f} |" for name, err in VAE_HISTORY]
     lines.append(f"| **v3 (current): 8 kHz, per-clip peak normalisation** | **{vae_results['mae_db_speech']:.2f}** |")
+    lines.append('')
+    lines.append("_The rows are not directly comparable. v1 and v2 clipped quiet speakers' low-level detail to the "
+                 "floor, which is trivially easy to reconstruct. v3 keeps the full 80 dB below each clip's own peak, "
+                 "so the same 60 dB \"speech\" region now includes much more quiet detail. The v3 number is the honest "
+                 "baseline for future changes._")
+    return '\n'.join(lines)
+
+
+def vocoder_table(results: list) -> str:
+    """Markdown table comparing spectrogram-to-audio methods against the true recordings."""
+    lines = ['| Spectrogram → audio | PESQ (narrowband, 1–4.5) ↑ | STOI (0–1) ↑ | ms / clip (CPU) ↓ |', '|---|---|---|---|']
+    lines += [f"| {r['method']} | {r['pesq']:.2f} | {r['stoi']:.3f} | {r['ms_per_clip']:.1f} |" for r in results]
     return '\n'.join(lines)
 
 

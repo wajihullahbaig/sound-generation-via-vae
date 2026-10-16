@@ -172,3 +172,6 @@ free_spoken_digit/checkpoints/vae_free_spoken_digit_best.pt
 free_spoken_digit/checkpoints/vae_free_spoken_digit_metrics.json
 free_spoken_digit/viz_outputs/
 
+
+# Training logs of the published models are tracked
+!logs/*.log
