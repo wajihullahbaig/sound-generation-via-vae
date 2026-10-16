@@ -1,0 +1,331 @@
+{
+ "protocol": "Blind test: 30 clips per model (3 per digit), fresh seed, same vocoder, shuffled and anonymised; one listener rated overall quality 1-5. Statistics: bootstrap 95% CI, two-sided Mann-Whitney U.",
+ "summary": {
+  "DDPM": {
+   "mean": 4.0,
+   "ci95": [
+    3.53,
+    4.43
+   ],
+   "rated_5": 0.53,
+   "rated_le_2": 0.13
+  },
+  "Flow Matching": {
+   "mean": 4.13,
+   "ci95": [
+    3.63,
+    4.57
+   ],
+   "rated_5": 0.6,
+   "rated_le_2": 0.17
+  },
+  "difference_ddpm_minus_flow": -0.13,
+  "difference_ci95": [
+   -0.8,
+   0.57
+  ],
+  "mann_whitney_p": 0.5934
+ },
+ "ratings": [
+  {
+   "model": "DDPM",
+   "digit": 4,
+   "quality": 3
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 5,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 3,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 3,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 6,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 7,
+   "quality": 4
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 0,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 5,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 0,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 6,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 8,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 3,
+   "quality": 4
+  },
+  {
+   "model": "DDPM",
+   "digit": 2,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 9,
+   "quality": 4
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 9,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 7,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 7,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 3,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 7,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 5,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 6,
+   "quality": 2
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 0,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 9,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 4,
+   "quality": 4
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 5,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 9,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 8,
+   "quality": 2
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 6,
+   "quality": 4
+  },
+  {
+   "model": "DDPM",
+   "digit": 5,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 0,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 2,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 1,
+   "quality": 4
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 9,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 2,
+   "quality": 1
+  },
+  {
+   "model": "DDPM",
+   "digit": 4,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 2,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 6,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 4,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 1,
+   "quality": 1
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 4,
+   "quality": 2
+  },
+  {
+   "model": "DDPM",
+   "digit": 5,
+   "quality": 5
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 8,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 8,
+   "quality": 1
+  },
+  {
+   "model": "DDPM",
+   "digit": 9,
+   "quality": 3
+  },
+  {
+   "model": "DDPM",
+   "digit": 1,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 0,
+   "quality": 3
+  },
+  {
+   "model": "DDPM",
+   "digit": 4,
+   "quality": 4
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 0,
+   "quality": 3
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 8,
+   "quality": 4
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 2,
+   "quality": 1
+  },
+  {
+   "model": "DDPM",
+   "digit": 7,
+   "quality": 1
+  },
+  {
+   "model": "DDPM",
+   "digit": 2,
+   "quality": 4
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 1,
+   "quality": 4
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 7,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 1,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 1,
+   "quality": 1
+  },
+  {
+   "model": "Flow Matching",
+   "digit": 3,
+   "quality": 5
+  },
+  {
+   "model": "DDPM",
+   "digit": 8,
+   "quality": 3
+  },
+  {
+   "model": "DDPM",
+   "digit": 3,
+   "quality": 3
+  },
+  {
+   "model": "DDPM",
+   "digit": 6,
+   "quality": 4
+  }
+ ]
+}

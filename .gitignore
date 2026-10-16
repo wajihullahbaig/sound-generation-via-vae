@@ -175,3 +175,6 @@ free_spoken_digit/viz_outputs/
 
 # Training logs of the published models are tracked
 !logs/*.log
+
+# Blind listening test (temporary)
+listening_test/

@@ -33,6 +33,7 @@ All models are trained on the [Free Spoken Digit Dataset](https://github.com/Jak
 
 - **Fréchet distance:** distance between generated and real test spectrograms in the feature space of a digit classifier trained on real data (as in FID and FAD). Lower is better.
 - **Digit accuracy:** how often that classifier hears the digit that was requested. The VAE is unconditional, so it has no score here.
+- **Perceived audio quality:** a blind listening test (30 clips per model, rated 1–5) found **no significant difference**: DDPM 4.00 vs Flow Matching 4.13 (p = 0.59). See the [report](REPORT.md#6-blind-listening-test).
 - **Reference row:** compares real training clips with real test clips. It shows the best achievable Fréchet distance and the classifier's own accuracy on real test recordings.
 - **Speed:** measured on an RTX 5000 in batches of 100. DDPM and Flow Matching both use 100 network evaluations per sample, plus classifier-free guidance (scale 2).
 

@@ -4,7 +4,8 @@ This report compares three generative models trained on identical spectrograms, 
 
 ## Summary
 
-- **Flow Matching is the best generator.** It reaches a Fréchet distance of **4.13** with **99.9%** digit accuracy. That is about 4× closer to real speech than VAE prior samples (16.26) and clearly ahead of DDPM (6.39 / 95.1%), with the same network, the same compute per sample and less training.
+- **Flow Matching wins on realism and intelligibility.** It reaches a Fréchet distance of **4.13** with **99.9%** digit accuracy, about 4× closer to real speech than VAE prior samples (16.26) and ahead of DDPM (6.39 / 95.1%). It does this with the same network, the same compute per sample and less training.
+- **DDPM and Flow Matching tie on perceived audio quality.** In a blind listening test (30 clips each), they scored **4.00 vs 4.13 / 5** (p = 0.59). Flow Matching produced more perfect clips but slightly more failures. The classifier metrics measure *which digit* and *how realistic the spectrogram*, not *how good it sounds*, so both views are needed.
 - **Both diffusion-style models far exceed the VAE in sample quality.** Their spectrograms show sharp harmonics and realistic onsets. VAE prior samples are blurry and contain artefacts.
 - **The neural vocoder removes the robotic sound.** Speech quality (PESQ) rises from **1.97 to 3.42**, and rendering is **33× faster** than Griffin-Lim (10 ms vs 336 ms per clip on the CPU).
 - **Early stopping mattered.** Both diffusion models began to overfit the 2,160 training clips after about 12–14k steps, and stopping kept the best weights.
@@ -89,6 +90,26 @@ The current VAE reconstructs test spectrograms with a **3.69 dB** mean error in 
 
 This is higher than the earlier global-normalization VAE (2.61 dB), but the two numbers are **not comparable**. The old normalization clipped quiet speakers' low-level detail to the floor, which is trivially easy to reconstruct. Per-clip normalization keeps the full 80 dB below every clip's peak, so the same "speech" region now contains much more quiet detail. 3.69 dB is the honest baseline for future changes.
 
+## 6. Blind listening test
+
+The classifier metrics can't hear sound quality, and an initial informal listen suggested DDPM sounded better. To settle it:
+- **Clips:** 30 fresh samples per model (3 per digit, a seed not used anywhere else), all rendered with the same vocoder.
+- **Blinding:** shuffled and anonymised, with the key kept out of reach.
+- **Rating:** overall quality from 1 (bad) to 5 (excellent).
+
+| Model | Mean score ↑ | 95% CI | Rated 5 | Rated ≤ 2 |
+|---|---|---|---|---|
+| DDPM | 4.00 | 3.53–4.43 | 53% | 13% |
+| Flow Matching | 4.13 | 3.63–4.57 | 60% | 17% |
+
+The difference is **−0.13 (95% CI −0.80 to +0.57, Mann-Whitney U p = 0.59)**, so there's **no detectable difference** in perceived quality.
+
+- **The two models fail differently.** Flow Matching's low ratings cluster on digits 2 and 1 (two of its three "2" samples scored 1). DDPM's are spread across digits 1, 6, 7 and 8.
+- **Flow Matching is higher-variance:** more excellent clips and slightly more failures.
+- **Small sets mislead.** The informal impression came from the 10 published samples per model (one per digit), where a single weak clip carries a lot of weight.
+
+Per-clip unblinded ratings are in [`assets/listening_test_results.json`](assets/listening_test_results.json).
+
 ## Training cost
 
 | Model | Best checkpoint | Stopped at | Wall time | Note |
@@ -103,13 +124,15 @@ This is higher than the earlier global-normalization VAE (2.61 dB), but the two 
 - **One classifier judges everything.** Fréchet distance and accuracy depend on a single small classifier, and FD is estimated from 600 test clips in 128-d. The model ranking is large and consistent across both metrics, but small FD differences shouldn't be over-read.
 - **Memorization is not measured.** With 2,160 clips, generated samples may be close to training clips. A nearest-neighbour check against the training set is the natural next metric.
 - **STOI is unreliable on clips under 1 s.** It analyses 384 ms segments, and about 45% of each 0.77 s clip is padding, so only a few valid segments remain. PESQ is the primary audio metric here.
-- **Single seed, no error bars.**
+- **Single seed, no error bars** on the classifier metrics.
+- **The listening test has one listener and 30 clips per model.** It can rule out a large quality gap but not a small one; a multi-listener MOS test would be needed for that.
 - **Timings depend on the hardware state.** Sampling speed was measured on a partly throttled laptop GPU; relative speeds are meaningful, absolute ones are not.
 
 ## Recommended next steps
 
-1. **Fewer sampling steps:** measure the speed/quality trade-off of Flow Matching at 10–25 steps. Straight paths usually degrade gracefully, which could make it about 4–10× faster.
-2. **Memorization metric:** nearest-neighbour distance from each sample to the training set, compared with test-to-train distances.
-3. **Quieter validation for diffusion:** validate with fixed noise and timesteps, so early stopping reacts to the model rather than to random sampling noise.
-4. **Vocoder fine-tuning on generated spectrograms:** reduces the train/inference mismatch for model outputs.
-5. **Light data augmentation** (time shift, gain, mild pitch shift) to delay overfitting on the small dataset.
+1. **Fix Flow Matching's weak digits:** inspect its "2" and "1" failures; per-class guidance or more sampling steps may help.
+2. **Fewer sampling steps:** measure the speed/quality trade-off of Flow Matching at 10–25 steps. Straight paths usually degrade gracefully, which could make it about 4–10× faster.
+3. **Memorization metric:** nearest-neighbour distance from each sample to the training set, compared with test-to-train distances.
+4. **Quieter validation for diffusion:** validate with fixed noise and timesteps, so early stopping reacts to the model rather than to random sampling noise.
+5. **Vocoder fine-tuning on generated spectrograms:** reduces the train/inference mismatch for model outputs.
+6. **Light data augmentation** (time shift, gain, mild pitch shift) to delay overfitting on the small dataset.
