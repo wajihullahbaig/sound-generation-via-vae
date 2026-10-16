@@ -2,10 +2,17 @@ import torch
 import torchaudio
 from torch import device as torch_device
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Tuple
 from dataclasses import dataclass
 import numpy as np
 import pickle
+
+
+def load_db_range(spectrograms_dir: str) -> Tuple[float, float]:
+    """Return the dataset-wide (min, max) dB range used to normalise the spectrograms."""
+    with open(Path(spectrograms_dir) / "min_max_values.pkl", "rb") as f:
+        values = next(iter(pickle.load(f).values()))
+    return values["min"], values["max"]
 
 
 @dataclass
@@ -19,7 +26,7 @@ class ProcessingConfig:
     duration: float = 0.74
     f_min: float = 0.0
     f_max: Optional[float] = None   # None -> Nyquist (sample_rate / 2)
-    top_db: float = 80.0            # dynamic range kept below the dataset peak
+    top_db: float = 80.0            # dynamic range kept below each clip's peak
     griffin_lim_iters: int = 100
         
     
@@ -161,36 +168,23 @@ class SpectrogramProcessor:
             save_dir = Path(save_dir)
             save_dir.mkdir(parents=True, exist_ok=True)
             
-            # Process all audio files
+            # Normalise each clip relative to its own peak: dB - max(dB), clipped at -top_db.
+            # - recording gain (which varies ~30 dB between speakers) is removed; the output audio
+            #   is peak-normalised anyway, so absolute level carries no information
+            # - every clip uses the full [0, 1] range and silence/padding sits at 0
+            # - the range is the same for all clips, so any decoded spectrogram can be inverted
+            #   without per-file statistics
+            db_min, db_max = -self.config.top_db, 0.0
             audio_files = sorted(Path(audio_dir).rglob(f"*{audio_ext}"))
-            spectrograms_db = []
             for audio_path in audio_files:
                 waveform, sr = torchaudio.load(str(audio_path))
-                spectrograms_db.append(self.create_spectrogram_from_audio(waveform, sr))
-            
-            # Normalise with ONE dataset-wide dB range instead of per-file min/max:
-            # - every pixel value means the same loudness across the dataset, so the
-            #   VAE does not have to model per-file scaling
-            # - silence (zero padding -> -100 dB) is clipped at peak - top_db rather than
-            #   stretching the useful dynamic range
-            # - spectrograms decoded from arbitrary latent vectors can be turned back
-            #   into audio without any per-file statistics
-            global_max = max(S.max().item() for S in spectrograms_db)
-            global_min = global_max - self.config.top_db
-            
-            for audio_path, S_db in zip(audio_files, spectrograms_db):
-                mel_spec = self.normalize(S_db, global_min, global_max)
+                S_db = self.create_spectrogram_from_audio(waveform, sr)
                 save_path = save_dir / f"{audio_path.stem}.npy"
-                np.save(save_path, mel_spec.cpu().numpy())
-                
+                np.save(save_path, self.normalize(S_db - S_db.max(), db_min, db_max).cpu().numpy())
                 # Kept per file for compatibility with create_audios.py
-                self.min_max_values[str(save_path)] = {
-                    "min": global_min,
-                    "max": global_max
-                }
-                
+                self.min_max_values[str(save_path)] = {"min": db_min, "max": db_max}
             print(f"Processed and saved {len(audio_files)} spectrograms to {save_dir} "
-                  f"(dB range {global_min:.1f} .. {global_max:.1f})")
+                  f"(peak-referenced, {db_min:.0f} .. {db_max:.0f} dB)")
             
             # Save min/max values
             with open(save_dir / "min_max_values.pkl", "wb") as f:

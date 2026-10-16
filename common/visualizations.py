@@ -18,7 +18,8 @@ def visualize_reconstructions(
     spectrogram_mode=False,
     cmap='viridis',
     fig_size_multiplier=(2, 4),
-    dataset_type='general'  # Added parameter to specify dataset type
+    dataset_type='general',  # Added parameter to specify dataset type
+    filename=None
 ):
     """
     Visualize or save original and reconstructed images with enhanced color support.
@@ -109,7 +110,7 @@ def visualize_reconstructions(
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             mode = 'spec' if spectrogram_mode else 'img'
             color_info = 'color' if is_color else 'gray'
-            filename = f'reconstructions_{mode}_{color_info}_{timestamp}.png'
+            filename = filename or f'reconstructions_{mode}_{color_info}_{timestamp}.png'
             
             fig.savefig(save_path / filename, dpi=300, bbox_inches='tight')
             plt.close(fig)
@@ -120,7 +121,8 @@ def visualize_latent_space(model,
                           data_loader, 
                           device, 
                           display: bool = True, 
-                          save_path: Optional[str] = None):
+                          save_path: Optional[str] = None,
+                          filename: Optional[str] = None):
     """
     Visualize or save latent space distribution with PCA projection.
     
@@ -193,10 +195,11 @@ def visualize_latent_space(model,
     else:
         # Generate filename with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f'latent_space_pca_{timestamp}.png'
-        fig.savefig(save_path / filename, dpi=300, bbox_inches='tight')
+        fig.savefig(save_path / (filename or f'latent_space_pca_{timestamp}.png'), dpi=300, bbox_inches='tight')
         plt.close(fig)
-        print(f"Saved latent space plot to {save_path / filename}")
+        print(f"Saved latent space plot to {save_path / (filename or f'latent_space_pca_{timestamp}.png')}")
+        if filename:
+            return
         
         # Save PCA components and explained variance
         np.save(save_path / f'pca_projection_{timestamp}.npy', z_points_2d)
@@ -212,3 +215,107 @@ def visualize_latent_space(model,
         np.save(save_path / f'pca_metadata_{timestamp}.npy', metadata)
         
         return 
+
+# Shared figure style for README plots (light surface, recessive axes, validated series colours)
+STYLE = {'surface': '#fcfcfb', 'text': '#0b0b0b', 'muted': '#52514e', 'grid': '#e4e3df',
+         'series': ['#2a78d6', '#eb6834']}
+
+
+def plot_sample_grid(rows: dict, save_path: str, col_labels: Optional[list] = None, cmap: str = 'magma') -> None:
+    """Grid of spectrograms: one row per model ({name: tensor (N, 1, H, W) in [0, 1]})."""
+    n_cols = max(len(v) for v in rows.values())
+    fig, axes = plt.subplots(len(rows), n_cols, figsize=(1.6 * n_cols, 1.25 * len(rows) + 0.4),
+                             facecolor=STYLE['surface'], squeeze=False)
+    for r, (name, images) in enumerate(rows.items()):
+        for c in range(n_cols):
+            ax = axes[r, c]
+            ax.set_xticks([]), ax.set_yticks([])
+            for spine in ax.spines.values():
+                spine.set_visible(False)
+            if c < len(images):
+                ax.imshow(images[c].squeeze().cpu(), origin='lower', aspect='auto', cmap=cmap, vmin=0, vmax=1)
+            if c == 0:
+                ax.set_ylabel(name, rotation=0, ha='right', va='center', fontsize=10, color=STYLE['text'])
+            if r == 0 and col_labels:
+                ax.set_title(col_labels[c], fontsize=10, color=STYLE['muted'])
+    fig.tight_layout(w_pad=0.3, h_pad=0.4)
+    fig.savefig(save_path, dpi=150, bbox_inches='tight', facecolor=STYLE['surface'])
+    plt.close(fig)
+
+
+def plot_training_curves(histories: dict, save_path: str) -> None:
+    """One panel per model with train and validation loss ({name: {'step', 'train_loss', 'val_loss'}})."""
+    fig, axes = plt.subplots(1, len(histories), figsize=(5.2 * len(histories), 3.4), facecolor=STYLE['surface'])
+    for ax, (name, h) in zip(np.atleast_1d(axes), histories.items()):
+        ax.set_facecolor(STYLE['surface'])
+        for key, label, color in [('train_loss', 'Train', STYLE['series'][0]),
+                                  ('val_loss', 'Validation (EMA)', STYLE['series'][1])]:
+            ax.plot(h['step'], h[key], color=color, linewidth=2, label=label)
+            ax.annotate(label, (h['step'][-1], h[key][-1]), xytext=(6, 0), textcoords='offset points',
+                        va='center', fontsize=9, color=STYLE['muted'])
+        ax.set_title(name, loc='left', fontsize=12, color=STYLE['text'])
+        ax.set_xlabel('Training step', color=STYLE['muted'])
+        ax.set_ylabel('Loss (MSE)', color=STYLE['muted'])
+        ax.grid(True, axis='y', color=STYLE['grid'], linewidth=0.8)
+        ax.tick_params(colors=STYLE['muted'], length=0)
+        for side in ['top', 'right', 'left']:
+            ax.spines[side].set_visible(False)
+        ax.spines['bottom'].set_color(STYLE['grid'])
+        ax.legend(frameon=False, fontsize=9, labelcolor=STYLE['muted'], loc='upper right')
+        ax.margins(x=0.12)
+    fig.tight_layout()
+    fig.savefig(save_path, dpi=150, bbox_inches='tight', facecolor=STYLE['surface'])
+    plt.close(fig)
+
+
+def _style_axis(ax, title: str) -> None:
+    """Apply the shared recessive axis style."""
+    ax.set_facecolor(STYLE['surface'])
+    ax.set_title(title, loc='left', fontsize=11, color=STYLE['text'])
+    ax.tick_params(colors=STYLE['muted'], length=0)
+    for side in ['top', 'right', 'left']:
+        ax.spines[side].set_visible(False)
+    ax.spines['bottom'].set_color(STYLE['grid'])
+
+
+def plot_metric_bars(results: list, save_path: str) -> None:
+    """One small panel per metric (Frechet distance, digit accuracy, speed) with a bar per model."""
+    panels = [('fd', 'Fréchet distance (lower is better)', '{:.1f}'),
+              ('accuracy', 'Digit accuracy (higher is better)', '{:.0%}'),
+              ('ms_per_sample', 'Generation time, ms/sample (lower is better)', '{:.1f}')]
+    fig, axes = plt.subplots(1, 3, figsize=(15, 3.6), facecolor=STYLE['surface'])
+    for ax, (key, title, fmt) in zip(axes, panels):
+        rows = [r for r in results if r.get(key) is not None]
+        names = [r['model'].split(' (')[0] for r in rows]
+        values = [r[key] for r in rows]
+        colors = [STYLE['muted'] if n.startswith('Real') else STYLE['series'][0] for n in names]
+        bars = ax.barh(names, values, color=colors, height=0.6)
+        ax.bar_label(bars, labels=[fmt.format(v) for v in values], padding=4, fontsize=9, color=STYLE['text'])
+        ax.invert_yaxis()
+        ax.set_xticks([])
+        ax.margins(x=0.25)
+        _style_axis(ax, title)
+    fig.tight_layout()
+    fig.savefig(save_path, dpi=150, bbox_inches='tight', facecolor=STYLE['surface'])
+    plt.close(fig)
+
+
+def plot_confusion_matrices(matrices: dict, save_path: str) -> None:
+    """Requested digit vs digit heard by the classifier, one row-normalised matrix per model."""
+    fig, axes = plt.subplots(1, len(matrices), figsize=(5.2 * len(matrices), 4.6), facecolor=STYLE['surface'])
+    for ax, (name, matrix) in zip(np.atleast_1d(axes), matrices.items()):
+        m = np.array(matrix)
+        image = ax.imshow(m, cmap='Blues', vmin=0, vmax=1)
+        for i in range(10):
+            for j in range(10):
+                if m[i, j] >= 0.05:
+                    ax.text(j, i, f"{m[i, j]:.0%}".replace('%', ''), ha='center', va='center', fontsize=7,
+                            color='white' if m[i, j] > 0.6 else STYLE['text'])
+        ax.set_xticks(range(10)), ax.set_yticks(range(10))
+        ax.set_xlabel('Digit heard by classifier', color=STYLE['muted'])
+        ax.set_ylabel('Digit requested', color=STYLE['muted'])
+        _style_axis(ax, f"{name}: accuracy {np.trace(m) / 10:.0%}")
+        ax.spines['bottom'].set_visible(False)
+    fig.colorbar(image, ax=axes, fraction=0.025, pad=0.02, label='Share of samples')
+    fig.savefig(save_path, dpi=150, bbox_inches='tight', facecolor=STYLE['surface'])
+    plt.close(fig)

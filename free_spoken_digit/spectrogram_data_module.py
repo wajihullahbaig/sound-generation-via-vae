@@ -185,6 +185,13 @@ class SpectrogramDataModule:
             
         
     
+    @staticmethod
+    def load_tensors(subset: Subset, device: torch.device) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Stack a split into (spectrograms, labels) tensors on the given device."""
+        x = torch.stack([subset[i][0] for i in range(len(subset))]).to(device)
+        y = torch.tensor([subset[i][1] for i in range(len(subset))], device=device)
+        return x, y
+
     def train_dataloader(self) -> DataLoader:
         return DataLoader(
             self.train_dataset,

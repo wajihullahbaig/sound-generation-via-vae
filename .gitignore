@@ -162,13 +162,13 @@ cython_debug/
 #.idea/
 
 outputs/
-logs/
 __pycache__
-# Training run outputs (timestamped checkpoints and per-epoch plots).
-# The exported weights free_spoken_digit/checkpoints/vae_free_spoken_digit_8k.pt are tracked.
-free_spoken_digit/checkpoints/vae_free_spoken_digit_2*
-free_spoken_digit/checkpoints/vae_free_spoken_digit_8k_best.pt
+# Training state (resume checkpoints, latest/best full checkpoints) and per-epoch plots.
+# Published weights (vae_free_spoken_digit_8k.pt, ddpm_8k.pt, flow_matching_8k.pt,
+# digit_classifier_8k.pt) are tracked.
+free_spoken_digit/checkpoints/*_resume.pt
+free_spoken_digit/checkpoints/vae_free_spoken_digit_latest.pt
+free_spoken_digit/checkpoints/vae_free_spoken_digit_best.pt
+free_spoken_digit/checkpoints/vae_free_spoken_digit_metrics.json
 free_spoken_digit/viz_outputs/
 
-# Local reference audios (not tracked)
-reference_audios/

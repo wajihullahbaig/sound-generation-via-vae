@@ -6,7 +6,7 @@ from spectrogram_processor import ProcessingConfig
 
 # Paths
 AUDIO_DIR = "C:/Users/Precision/Onus/GitHub/free-spoken-digit-dataset/recordings"
-SPECTROGRAMS_DIR = "C:/Users/Precision/Onus/Data/free-audio-spectrogram-8k"
+SPECTROGRAMS_DIR = "C:/Users/Precision/Onus/Data/free-audio-spectrogram-8k-peaknorm"
 
 # Spectrogram configurations. Output shape is n_mels x time_bins.
 PROCESSING_CONFIGS = {
@@ -45,10 +45,43 @@ TRAIN_CONFIG = dict(
     kl_weight=1.0,
     kl_warmup_epochs=20,
     grad_clip=5.0,
+    patience=15,           # epochs without val improvement (after KL warm-up) before stopping
 )
 
 # Checkpoint used by test() and create_audios.py
 CHECKPOINT_PATH = "free_spoken_digit/checkpoints/vae_free_spoken_digit_8k.pt"
+
+
+# Diffusion (DDPM) and Flow Matching share one class-conditional U-Net
+UNET_CONFIG = dict(
+    base_channels=64,
+    channel_mults=(1, 2, 3, 4),
+    num_classes=10,
+    dropout=0.1,
+    p_uncond=0.1,          # label dropout for classifier-free guidance
+    patch_size=2,          # U-Net runs at 32x128 (pixel-unshuffle), ~3.7x faster than full resolution
+)
+GENERATIVE_TRAIN_CONFIG = dict(
+    steps=60_000,          # upper bound; early stopping usually ends sooner
+    batch_size=64,
+    lr=2e-4,
+    warmup_steps=1000,
+    ema_decay=0.9995,
+    grad_clip=1.0,
+    eval_every=2000,
+    patience=5,            # validations without improvement before stopping
+    log_every=500,
+)
+# Both samplers use 100 network evaluations per sample (Heun = 2 per step)
+SAMPLER_CONFIG = {
+    'ddpm': dict(steps=100, guidance=2.0, eta=1.0),
+    'flow': dict(steps=50, guidance=2.0),
+}
+GENERATIVE_CHECKPOINTS = {
+    'ddpm': "free_spoken_digit/checkpoints/ddpm_8k.pt",
+    'flow': "free_spoken_digit/checkpoints/flow_matching_8k.pt",
+}
+CLASSIFIER_CHECKPOINT = "free_spoken_digit/checkpoints/digit_classifier_8k.pt"
 
 
 def build_model_kwargs(selection: str = SELECTION) -> dict:

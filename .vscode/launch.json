@@ -1,30 +1,228 @@
 {
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Training debugger",
+            "name": "Pipeline: all methods + report",
             "type": "debugpy",
             "request": "launch",
-            "program": "free_spoken_digit/main.py",            
+            "program": "free_spoken_digit/run_pipeline.py",
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
             "env": {
-                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}"
-            },
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
         },
         {
-            "name": "Latent-to-Wav",
+            "name": "Pipeline: resume VAE (then everything else)",
             "type": "debugpy",
             "request": "launch",
-            "program": "free_spoken_digit/create_audios.py",            
+            "program": "free_spoken_digit/run_pipeline.py",
+            "args": [
+                "--from",
+                "vae",
+                "--resume"
+            ],
             "cwd": "${workspaceFolder}",
             "console": "integratedTerminal",
             "env": {
-                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}"
-            },
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
         },
+        {
+            "name": "Pipeline: resume DDPM (then Flow + report)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/run_pipeline.py",
+            "args": [
+                "--from",
+                "ddpm",
+                "--resume"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "Pipeline: resume Flow Matching (then report)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/run_pipeline.py",
+            "args": [
+                "--from",
+                "flow",
+                "--resume"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "Pipeline: report only",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/run_pipeline.py",
+            "args": [
+                "--from",
+                "report"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "VAE: train",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/main.py",
+            "args": [
+                "--train"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "VAE: resume training",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/main.py",
+            "args": [
+                "--train",
+                "--resume"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "VAE: test (figures + metrics)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/main.py",
+            "args": [
+                "--test"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "VAE: latent-to-wav",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/create_audios.py",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "DDPM: train + sample",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/train_generative.py",
+            "args": [
+                "--method",
+                "ddpm",
+                "--train",
+                "--sample"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "DDPM: resume training + sample",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/train_generative.py",
+            "args": [
+                "--method",
+                "ddpm",
+                "--train",
+                "--resume",
+                "--sample"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "Flow Matching: train + sample",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/train_generative.py",
+            "args": [
+                "--method",
+                "flow",
+                "--train",
+                "--sample"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "Flow Matching: resume training + sample",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/train_generative.py",
+            "args": [
+                "--method",
+                "flow",
+                "--train",
+                "--resume",
+                "--sample"
+            ],
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        },
+        {
+            "name": "Evaluate: VAE vs DDPM vs Flow Matching",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "free_spoken_digit/evaluate_generative.py",
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "%PYTHONPATH%;${workspaceFolder}",
+                "MPLBACKEND": "Agg"
+            }
+        }
     ]
 }

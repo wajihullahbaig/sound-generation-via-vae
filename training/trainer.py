@@ -2,13 +2,15 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from typing import Tuple, Dict, Optional
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 from pathlib import Path
 import logging
 from collections import defaultdict
 from tqdm import tqdm
 import json
 from common.visualizations import visualize_reconstructions
+from training.early_stopping import EarlyStopping
+from common.seeding import get_rng_state, set_rng_state
 
     
 class VAETrainer:
@@ -24,7 +26,8 @@ class VAETrainer:
                  scheduler: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
                  kl_weight: float = 1.0,
                  kl_warmup_epochs: int = 0,
-                 grad_clip: Optional[float] = None
+                 grad_clip: Optional[float] = None,
+                 patience: Optional[int] = None
                  ):
         """
         Args:
@@ -37,6 +40,7 @@ class VAETrainer:
             kl_weight: Final weight (beta) of the KL term
             kl_warmup_epochs: Linearly ramp the KL weight from 0 to kl_weight over this many epochs
             grad_clip: Max gradient norm (optional)
+            patience: Early-stopping patience in epochs, counted after KL warm-up (optional)
         """
         self.model = model
         self.optimizer = optimizer
@@ -48,6 +52,7 @@ class VAETrainer:
         self.kl_weight = kl_weight
         self.kl_warmup_epochs = kl_warmup_epochs
         self.grad_clip = grad_clip
+        self.patience = patience
         self.current_kl_weight = kl_weight
         
         # Create save directory
@@ -158,7 +163,6 @@ class VAETrainer:
         }
         
         return avg_metrics
-    ''
     def validate(self, val_loader: DataLoader) -> Dict[str, float]:
         """
         Validate the model.
@@ -189,100 +193,101 @@ class VAETrainer:
         
         return avg_metrics
     
-    def save_checkpoint(self, 
-                       epoch: int, 
-                       metrics: Dict[str, float], 
-                       is_best: bool = False) -> None:
-        """
-        Save model checkpoint.
-        
-        Args:
-            epoch: Current epoch number
-            metrics: Dictionary containing metrics to save
-            is_best: Whether this is the best model so far
-        """
+    def save_checkpoint(self, epoch: int, metrics: Dict[str, float], is_best: bool,
+                        history: Dict[str, list], stopper: Optional[EarlyStopping]) -> None:
+        """Save the full training state to <name>_latest.pt (used by resume) and to <name>_best.pt if best."""
         checkpoint = {
             'epoch': epoch,
             'model_state_dict': self.model.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
+            'scheduler_state_dict': self.scheduler.state_dict() if self.scheduler else None,
+            'early_stopping': stopper.state_dict() if stopper else None,
+            'best_val_loss': self.best_val_loss,
+            'history': dict(history),
+            'rng_state': get_rng_state(),
             'metrics': metrics
         }
-        
-        # Save latest checkpoint
-        checkpoint_path = self.save_dir / f'{self.model_name}_latest.pt'
-        torch.save(checkpoint, checkpoint_path)
-        
-        # Save best model if this is the best so far
+        torch.save(checkpoint, self.save_dir / f'{self.model_name}_latest.pt')
         if is_best:
-            best_path = self.save_dir / f'{self.model_name}_best.pt'
-            torch.save(checkpoint, best_path)
-        
-        # Save metrics
-        metrics_path = self.save_dir / f'{self.model_name}_metrics.json'
-        with open(metrics_path, 'w') as f:
+            torch.save(checkpoint, self.save_dir / f'{self.model_name}_best.pt')
+        with open(self.save_dir / f'{self.model_name}_metrics.json', 'w') as f:
             json.dump(metrics, f, indent=4)
-    
-    def train(self, 
+
+    def load_checkpoint(self, history: Dict[str, list], stopper: Optional[EarlyStopping]) -> int:
+        """Restore the full training state from <name>_latest.pt; returns the next epoch."""
+        path = self.save_dir / f'{self.model_name}_latest.pt'
+        checkpoint = torch.load(path, map_location=self.device, weights_only=False)
+        self.model.load_state_dict(checkpoint['model_state_dict'])
+        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        if self.scheduler and checkpoint['scheduler_state_dict']:
+            self.scheduler.load_state_dict(checkpoint['scheduler_state_dict'])
+        if stopper and checkpoint['early_stopping']:
+            stopper.load_state_dict(checkpoint['early_stopping'])
+        self.best_val_loss = checkpoint['best_val_loss']
+        history.update(checkpoint['history'])
+        set_rng_state(checkpoint['rng_state'])
+        self.logger.info(f"Resumed from {path} (epoch {checkpoint['epoch']}, best val {self.best_val_loss:.4f})")
+        return checkpoint['epoch'] + 1
+
+    def train(self,
               train_loader: DataLoader,
               val_loader: DataLoader,
-              num_epochs: int=20,dataset_type="general") -> Dict[str, list]:
-        """
-        Train the model for multiple epochs.
-        
-        Args:
-            train_loader: Training data loader
-            val_loader: Validation data loader
-            num_epochs: Number of epochs to train for
-            
-        Returns:
-            history: Dictionary containing training history
-        """
+              num_epochs: int = 20,
+              dataset_type: str = "general",
+              resume: bool = False) -> Dict[str, list]:
+        """Train for up to num_epochs (optionally resuming); Ctrl+C stops after the last saved epoch."""
         history = defaultdict(list)
-        
-        for epoch in range(num_epochs):
-            # Train for one epoch
-            train_metrics = self.train_epoch(train_loader, epoch)
-            
-            # Validate
-            val_metrics = self.validate(val_loader)
-            val_metrics = {f'val_{k}': v for k, v in val_metrics.items()}
-            
-            if self.scheduler is not None:
-                if isinstance(self.scheduler, optim.lr_scheduler.ReduceLROnPlateau):
-                    self.scheduler.step(val_metrics['val_loss'])
-                else:
-                    self.scheduler.step()
-            
-            # Update history
-            for k, v in train_metrics.items():
-                history[f'train_{k}'].append(v)
-            for k, v in val_metrics.items():
-                history[k].append(v)
-            
-            # Check if this is the best model. During KL warm-up the loss is not
-            # comparable across epochs, so only track the best once beta is final.
-            warmed_up = epoch + 1 >= self.kl_warmup_epochs
-            is_best = warmed_up and val_metrics['val_loss'] < self.best_val_loss
-            if is_best:
-                self.best_val_loss = val_metrics['val_loss']
-            
-            # Save checkpoint
-            self.save_checkpoint(epoch, 
-                               {**train_metrics, **val_metrics}, 
-                               is_best)
-            
-            # Log metrics
-            self.logger.info(
-                f"Epoch {epoch}: "
-                f"Train Loss: {train_metrics['loss']:.4f}, "
-                f"Val Loss: {val_metrics['val_loss']:.4f} "
-                f"(recon {val_metrics['val_recon_loss']:.1f}, kl {val_metrics['val_kl_loss']:.1f}, "
-                f"beta {self.current_kl_weight:.3f}, lr {self.optimizer.param_groups[0]['lr']:.2e})"
-            )
-            
-            # Optional: Visualize reconstructions every N epochs
-            if epoch % 5 == 0 and self.reconstruction_save_dir:
-                visualize_reconstructions(self.model, val_loader, self.device, display=False,save_path=self.reconstruction_save_dir,dataset_type=dataset_type)                        
-        
-        
+        stopper = EarlyStopping(self.patience) if self.patience else None
+        start_epoch = self.load_checkpoint(history, stopper) if resume else 0
+        try:
+            for epoch in range(start_epoch, num_epochs):
+                if self.run_epoch(epoch, train_loader, val_loader, history, stopper, dataset_type):
+                    break
+        except KeyboardInterrupt:
+            self.logger.info(f"Interrupted. State up to the last finished epoch is in "
+                             f"{self.save_dir / (self.model_name + '_latest.pt')}; continue with --resume")
+            raise SystemExit(130)
         return dict(history)
+
+    def run_epoch(self, epoch: int, train_loader: DataLoader, val_loader: DataLoader,
+                  history: Dict[str, list], stopper: Optional[EarlyStopping], dataset_type: str) -> bool:
+        """Train, validate, checkpoint and log one epoch; returns True when early stopping triggers."""
+        train_metrics = self.train_epoch(train_loader, epoch)
+        val_metrics = {f'val_{k}': v for k, v in self.validate(val_loader).items()}
+
+        if self.scheduler is not None:
+            if isinstance(self.scheduler, optim.lr_scheduler.ReduceLROnPlateau):
+                self.scheduler.step(val_metrics['val_loss'])
+            else:
+                self.scheduler.step()
+
+        for k, v in train_metrics.items():
+            history[f'train_{k}'].append(v)
+        for k, v in val_metrics.items():
+            history[k].append(v)
+
+        # During KL warm-up the loss is not comparable across epochs, so best model and
+        # early stopping only start once beta is final.
+        warmed_up = epoch + 1 >= self.kl_warmup_epochs
+        is_best = warmed_up and val_metrics['val_loss'] < self.best_val_loss
+        if is_best:
+            self.best_val_loss = val_metrics['val_loss']
+        if stopper and warmed_up:
+            stopper.step(val_metrics['val_loss'])
+        self.save_checkpoint(epoch, {**train_metrics, **val_metrics}, is_best, history, stopper)
+
+        patience = f", patience {stopper.bad_checks}/{stopper.patience}" if stopper and warmed_up else ""
+        self.logger.info(
+            f"Epoch {epoch}: Train Loss: {train_metrics['loss']:.4f}, Val Loss: {val_metrics['val_loss']:.4f} "
+            f"(recon {val_metrics['val_recon_loss']:.1f}, kl {val_metrics['val_kl_loss']:.1f}, "
+            f"beta {self.current_kl_weight:.3f}, lr {self.optimizer.param_groups[0]['lr']:.2e}"
+            f"{', best' if is_best else ''}{patience})")
+
+        if epoch % 5 == 0 and self.reconstruction_save_dir:
+            visualize_reconstructions(self.model, val_loader, self.device, display=False,
+                                      save_path=self.reconstruction_save_dir, dataset_type=dataset_type)
+
+        if stopper and warmed_up and stopper.should_stop:
+            self.logger.info(f"Early stopping at epoch {epoch}: no improvement for {self.patience} epochs")
+            return True
+        return False
