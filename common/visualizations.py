@@ -8,214 +8,138 @@ from typing import Optional
 from matplotlib.ticker import FormatStrFormatter, LogLocator, NullFormatter
 
        
+def _collect_digit_samples(data_loader, num_images: int):
+    """Return one sample per digit 0..9 when available, else the first num_images samples."""
+    xs, ys = [], []
+    for x, y in data_loader:
+        xs.append(x)
+        ys.append(y)
+    x_all, y_all = torch.cat(xs), torch.cat(ys)
+    if num_images == 10 and set(range(10)).issubset(set(y_all.tolist())):
+        return torch.stack([x_all[y_all == d][0] for d in range(10)]), [f'Digit {d}' for d in range(10)]
+    return x_all[:num_images], [f'Digit {int(y)}' for y in y_all[:num_images]]
+
+
 def visualize_reconstructions(
-    model, 
-    data_loader, 
-    device, 
-    num_images=8,
-    display=True, 
+    model,
+    data_loader,
+    device,
+    num_images=10,
+    display=True,
     save_path=None,
     color_mode='auto',
     spectrogram_mode=False,
-    cmap='viridis',
-    fig_size_multiplier=(2, 4),
-    dataset_type='general',  # Added parameter to specify dataset type
+    cmap='magma',
+    fig_size_multiplier=(1.6, 3.0),
+    dataset_type='general',
     filename=None
 ):
-    """
-    Visualize or save original and reconstructed images with enhanced color support.
-    
-    Args:
-        model: VAE model
-        data_loader: DataLoader instance
-        device: torch device
-        num_images: Number of images to visualize
-        display: If True, displays the plot. If False, saves to disk
-        save_path: Directory to save the visualization. If None, uses '/viz_outputs'
-        color_mode: 'auto', 'color', or 'grayscale'. 'auto' determines from input shape
-        spectrogram_mode: If True, applies spectrogram-specific visualization settings
-        cmap: Colormap for visualization (e.g., 'viridis', 'magma', 'gray')
-        fig_size_multiplier: Tuple of (width, height) multipliers for figure size
-        dataset_type: String indicating dataset type ('mnist', 'spectrogram', or 'general')
-    """
+    """Visualize or save original and reconstructed samples in the shared figure style."""
     model.eval()
     save_path = Path(save_path) if save_path else Path('/viz_outputs')
     save_path.mkdir(parents=True, exist_ok=True)
-    if data_loader.batch_size < num_images:
-        num_images = data_loader.batch_size
-        
+
     with torch.no_grad():
-        images, _ = next(iter(data_loader))
-        images = images[:num_images].to(device)
+        images, col_labels = _collect_digit_samples(data_loader, num_images)
+        images = images.to(device)
         reconstructions, _, _, _ = model(images)
-        
-        # Determine if images are color based on shape or color_mode
-        is_color = (color_mode == 'color' or 
-                   (color_mode == 'auto' and images.shape[1] == 3))
-        
-        # Create figure with appropriate size
-        fig_width = fig_size_multiplier[0] * num_images
-        fig_height = fig_size_multiplier[1]
-        fig, axes = plt.subplots(2, num_images, figsize=(fig_width, fig_height))
-        
-        # Visualization loop
-        for i in range(num_images):
-            # Original images
-            img_orig = images[i].cpu()
-            if is_color:
-                # Handle color images (C,H,W) -> (H,W,C)
-                img_orig = img_orig.permute(1, 2, 0)
-                img_recon = reconstructions[i].cpu().permute(1, 2, 0)
-                
-                # Ensure values are in valid range
-                img_orig = torch.clamp(img_orig, 0, 1)
-                img_recon = torch.clamp(img_recon, 0, 1)
-                
-                axes[0,i].imshow(img_orig)
-                axes[1,i].imshow(img_recon)
-            else:
-                # Handle grayscale images
-                img_orig = img_orig.squeeze()
-                img_recon = reconstructions[i].cpu().squeeze()
-                
-                if spectrogram_mode or dataset_type == 'spectrogram':
-                    # Spectrogram-specific visualization
-                    axes[0,i].imshow(img_orig, cmap=cmap, origin='lower', 
-                                   aspect='auto', interpolation='nearest')
-                    axes[1,i].imshow(img_recon, cmap=cmap, origin='lower',
-                                   aspect='auto', interpolation='nearest')
-                else:
-                    # MNIST or other image visualization (no flipping)
-                    axes[0,i].imshow(img_orig, cmap=cmap, interpolation='nearest')
-                    axes[1,i].imshow(img_recon, cmap=cmap, interpolation='nearest')
-            
-            # Turn off axes for cleaner look
-            axes[0,i].axis('off')
-            axes[1,i].axis('off')
-            
-            # Add colorbar if in spectrogram mode
-            if spectrogram_mode:
-                plt.colorbar(axes[0,i].images[0], ax=axes[0,i], fraction=0.046, pad=0.04)
-                plt.colorbar(axes[1,i].images[0], ax=axes[1,i], fraction=0.046, pad=0.04)
-        
-        # Add row labels
-        axes[0,0].set_ylabel('Original', size='large')
-        axes[1,0].set_ylabel('Reconstructed', size='large')
-        
-        plt.tight_layout()
-        
-        if display:
-            plt.show()
-        else:
-            # Generate filename with timestamp and relevant info
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            mode = 'spec' if spectrogram_mode else 'img'
-            color_info = 'color' if is_color else 'gray'
-            filename = filename or f'reconstructions_{mode}_{color_info}_{timestamp}.png'
-            
-            fig.savefig(save_path / filename, dpi=300, bbox_inches='tight')
-            plt.close(fig)
-            print(f"Saved reconstructions to {save_path / filename}")
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    is_spec = spectrogram_mode or dataset_type == 'spectrogram'
+    filename = filename or f"reconstructions_{'spec' if is_spec else 'img'}_{timestamp}.png"
+    out_file = save_path / filename
+
+    if is_spec and not display:
+        plot_sample_grid({'Original': images.cpu(), 'Reconstructed': reconstructions.cpu()},
+                         str(out_file), col_labels=col_labels, cmap=cmap)
+        print(f"Saved reconstructions to {out_file}")
+        return
+
+    n = len(images)
+    fig, axes = plt.subplots(2, n, figsize=(fig_size_multiplier[0] * n, fig_size_multiplier[1]),
+                             facecolor=STYLE['surface'], squeeze=False)
+    for r, (name, batch) in enumerate([('Original', images.cpu()), ('Reconstructed', reconstructions.cpu())]):
+        for c in range(n):
+            ax = axes[r, c]
+            ax.set_xticks([]), ax.set_yticks([])
+            for spine in ax.spines.values():
+                spine.set_visible(False)
+            img = batch[c].permute(1, 2, 0).clamp(0, 1) if batch.shape[1] == 3 else batch[c].squeeze()
+            ax.imshow(img, cmap='gray' if not is_spec and batch.shape[1] != 3 else cmap,
+                      origin='lower' if is_spec else 'upper', aspect='auto' if is_spec else 'equal')
+            if c == 0:
+                ax.set_ylabel(name, rotation=0, ha='right', va='center', fontsize=10, color=STYLE['text'])
+            if r == 0 and col_labels:
+                ax.set_title(col_labels[c], fontsize=10, color=STYLE['muted'])
+    fig.tight_layout(w_pad=0.3, h_pad=0.4)
+    if display:
+        plt.show()
+    else:
+        fig.savefig(out_file, dpi=150, bbox_inches='tight', facecolor=STYLE['surface'])
+        plt.close(fig)
+        print(f"Saved reconstructions to {out_file}")
 
 
-def visualize_latent_space(model, 
-                          data_loader, 
-                          device, 
-                          display: bool = True, 
-                          save_path: Optional[str] = None,
-                          filename: Optional[str] = None):
-    """
-    Visualize or save latent space distribution with PCA projection.
-    
-    Args:
-        model: VAE model
-        data_loader: DataLoader instance
-        device: torch device
-        display: If True, displays the plot. If False, saves to disk
-        save_path: Directory to save the visualization. If None, uses '/viz_outputs'
-    """
+def visualize_latent_space(model,
+                           data_loader,
+                           device,
+                           display: bool = True,
+                           save_path: Optional[str] = None,
+                           filename: Optional[str] = None):
+    """Visualize or save the VAE latent space PCA projection and explained variance curve."""
     model.eval()
     save_path = Path(save_path) if save_path else Path('/viz_outputs')
     save_path.mkdir(parents=True, exist_ok=True)
-    
-    z_points = []
-    labels = []
-    
-    # Collect latent vectors
+
+    z_points, labels = [], []
     with torch.no_grad():
         for x, y in data_loader:
             mu, _ = model.encoder(x.to(device))
             z_points.append(mu.cpu())
             labels.extend(y.numpy())
-            
-    # Combine all latent vectors and convert to numpy
+
     z_points = torch.cat(z_points, dim=0).numpy()
     labels = np.array(labels)
-    
-    # Apply PCA
-    pca = PCA(n_components=2)
-    z_points_2d = pca.fit_transform(z_points)
-    
-    # Calculate explained variance
-    explained_var = pca.explained_variance_ratio_
-    total_var = sum(explained_var)
-    
-    # Create figure
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(20, 8))
-    
-    # Plot PCA projection
-    scatter = ax1.scatter(z_points_2d[:, 0], z_points_2d[:, 1], 
-                         c=labels, cmap='tab10', alpha=0.6)
-    ax1.grid(True, linestyle='--', alpha=0.3)
-    ax1.set_title(f'Latent Space PCA Projection\nTotal Explained Variance: {total_var:.3f}')
-    ax1.set_xlabel(f'First PC (Var: {explained_var[0]:.3f})')
-    ax1.set_ylabel(f'Second PC (Var: {explained_var[1]:.3f})')
-    plt.colorbar(scatter, ax=ax1)
-    
-    # Plot explained variance
-    n_components = len(pca.explained_variance_ratio_)
-    variance_ratio = pca.explained_variance_ratio_
-    cumulative_variance_ratio = np.cumsum(variance_ratio)
-    
-    ax2.plot(range(1, n_components + 1), 
-             cumulative_variance_ratio, 
-             'bo-', label='Cumulative Explained Variance')
-    ax2.plot(range(1, n_components + 1), 
-             variance_ratio, 
-             'ro-', label='Individual Explained Variance')
-    ax2.set_xlabel('Number of Components')
-    ax2.set_ylabel('Explained Variance Ratio')
-    ax2.set_title('Explained Variance Analysis')
-    ax2.grid(True, linestyle='--', alpha=0.3)
-    ax2.legend()
-    
-    plt.tight_layout()
-    
+
+    n_comp = min(32, z_points.shape[1], z_points.shape[0])
+    pca = PCA(n_components=n_comp)
+    z_pca = pca.fit_transform(z_points)
+    var_ratio = pca.explained_variance_ratio_
+    cum_var = np.cumsum(var_ratio)
+
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(11.5, 4.2), facecolor=STYLE['surface'])
+
+    # Panel 1: 2D PCA scatter by digit
+    cmap = plt.get_cmap('tab10', 10)
+    for d in sorted(np.unique(labels)):
+        mask = labels == d
+        ax1.scatter(z_pca[mask, 0], z_pca[mask, 1], color=cmap(int(d)), label=f'{int(d)}', s=22, alpha=0.75, edgecolors='none')
+    _style_axis(ax1, f"Latent space PCA (PC1 + PC2 = {var_ratio[:2].sum():.1%} variance)")
+    ax1.set_xlabel(f"PC 1 ({var_ratio[0]:.1%} variance)", color=STYLE['muted'])
+    ax1.set_ylabel(f"PC 2 ({var_ratio[1]:.1%} variance)", color=STYLE['muted'])
+    ax1.grid(True, color=STYLE['grid'], linewidth=0.8)
+    ax1.legend(title='Digit', frameon=False, fontsize=8, title_fontsize=8, ncol=2, loc='upper right')
+
+    # Panel 2: Cumulative & individual explained variance across components
+    comps = np.arange(1, n_comp + 1)
+    ax2.plot(comps, cum_var, 'o-', color=STYLE['series'][0], linewidth=2, markersize=4, label='Cumulative variance')
+    ax2.bar(comps, var_ratio, color=STYLE['series'][1], alpha=0.75, width=0.65, label='Per-component variance')
+    _style_axis(ax2, f"Explained variance across top {n_comp} latent dimensions ({cum_var[-1]:.1%} total)")
+    ax2.set_xlabel('Principal component', color=STYLE['muted'])
+    ax2.set_ylabel('Explained variance ratio', color=STYLE['muted'])
+    ax2.grid(True, axis='y', color=STYLE['grid'], linewidth=0.8)
+    ax2.legend(frameon=False, fontsize=9, labelcolor=STYLE['muted'], loc='center right')
+
+    fig.tight_layout()
     if display:
         plt.show()
     else:
-        # Generate filename with timestamp
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        fig.savefig(save_path / (filename or f'latent_space_pca_{timestamp}.png'), dpi=300, bbox_inches='tight')
+        out_file = save_path / (filename or f'latent_space_pca_{timestamp}.png')
+        fig.savefig(out_file, dpi=150, bbox_inches='tight', facecolor=STYLE['surface'])
         plt.close(fig)
-        print(f"Saved latent space plot to {save_path / (filename or f'latent_space_pca_{timestamp}.png')}")
-        if filename:
-            return
-        
-        # Save PCA components and explained variance
-        np.save(save_path / f'pca_projection_{timestamp}.npy', z_points_2d)
-        np.save(save_path / f'pca_components_{timestamp}.npy', pca.components_)
-        
-        # Save metadata
-        metadata = {
-            'explained_variance_ratio': pca.explained_variance_ratio_,
-            'singular_values': pca.singular_values_,
-            'n_components': pca.n_components_,
-            'total_variance': total_var
-        }
-        np.save(save_path / f'pca_metadata_{timestamp}.npy', metadata)
-        
-        return 
+        print(f"Saved latent space plot to {out_file}")
+
 
 # Shared figure style for README plots (light surface, recessive axes, validated series colours)
 STYLE = {'surface': '#fcfcfb', 'text': '#0b0b0b', 'muted': '#52514e', 'grid': '#e4e3df',

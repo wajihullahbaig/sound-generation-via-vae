@@ -42,7 +42,7 @@ def test(test_loader,model:VAE,device:torch_device=None,checkpoint_path:str=conf
     with open('assets/vae_results.json', 'w') as f:
         json.dump({'epoch': checkpoint.get('epoch'), **metrics}, f, indent=2)
 
-    visualize_reconstructions(model, test_loader, device, num_images=8, display=False, save_path='assets',
+    visualize_reconstructions(model, test_loader, device, num_images=10, display=False, save_path='assets',
                               dataset_type="spectrogram", filename='reconstructions.png')
     visualize_latent_space(model, test_loader, device, display=False, save_path='assets', filename='latent_space.png')
 
@@ -65,7 +65,7 @@ def main( train_loader: DataLoader,validation_loader:DataLoader,model:VAE, devic
         optimizer=optimizer,
         device=device,
         save_dir='free_spoken_digit/checkpoints',
-        reconstruction_save_dir='free_spoken_digit/viz_outputs',
+        reconstruction_save_dir=None,
         model_name=model_name,
         scheduler=scheduler,
         kl_weight=train_config['kl_weight'],

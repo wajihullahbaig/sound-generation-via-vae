@@ -1,0 +1,248 @@
+2026-10-17 21:43:18 | INFO | Logging to logs\vocoder_train_20261017_214318.log
+2026-10-17 21:43:31 | INFO | Vocoder: 3.3M parameters
+2026-10-17 21:43:32 | INFO | Vocoder steps 1..40000 (batch 32 × 64 frames, GAN from step 2000, patience 6)
+2026-10-17 21:43:36 | INFO | step    200/40000 | mel 2.6007 | 25 ms/step | ETA 16 min
+2026-10-17 21:43:41 | INFO | step    400/40000 | mel 1.4401 | 24 ms/step | ETA 16 min
+2026-10-17 21:43:46 | INFO | step    600/40000 | mel 0.9163 | 24 ms/step | ETA 15 min
+2026-10-17 21:43:50 | INFO | step    800/40000 | mel 0.6810 | 23 ms/step | ETA 15 min
+2026-10-17 21:43:55 | INFO | step   1000/40000 | mel 0.5887 | 23 ms/step | ETA 15 min
+2026-10-17 21:43:55 | INFO | validation @ 1000 | val mel 0.6112 | best 0.6112 (saved) | patience 0/6
+2026-10-17 21:44:00 | INFO | step   1200/40000 | mel 0.5383 | 24 ms/step | ETA 16 min
+2026-10-17 21:44:05 | INFO | step   1400/40000 | mel 0.5057 | 24 ms/step | ETA 16 min
+2026-10-17 21:44:10 | INFO | step   1600/40000 | mel 0.4781 | 24 ms/step | ETA 16 min
+2026-10-17 21:44:15 | INFO | step   1800/40000 | mel 0.4465 | 24 ms/step | ETA 16 min
+2026-10-17 21:44:21 | INFO | step   2000/40000 | mel 0.4181 | 25 ms/step | ETA 16 min
+2026-10-17 21:44:21 | INFO | validation @ 2000 | val mel 0.3909 | best 0.3909 (saved) | patience 0/6
+2026-10-17 21:44:43 | INFO | step   2200/40000 | mel 0.3948 | 33 ms/step | ETA 21 min
+2026-10-17 21:45:05 | INFO | step   2400/40000 | mel 0.3900 | 39 ms/step | ETA 24 min
+2026-10-17 21:45:27 | INFO | step   2600/40000 | mel 0.3797 | 45 ms/step | ETA 28 min
+2026-10-17 21:45:50 | INFO | step   2800/40000 | mel 0.3787 | 49 ms/step | ETA 31 min
+2026-10-17 21:46:12 | INFO | step   3000/40000 | mel 0.3568 | 54 ms/step | ETA 33 min
+2026-10-17 21:46:13 | INFO | validation @ 3000 | val mel 0.3313 | best 0.3313 (saved) | patience 0/6
+2026-10-17 21:46:35 | INFO | step   3200/40000 | mel 0.3562 | 57 ms/step | ETA 35 min
+2026-10-17 21:46:58 | INFO | step   3400/40000 | mel 0.3491 | 61 ms/step | ETA 37 min
+2026-10-17 21:47:21 | INFO | step   3600/40000 | mel 0.3394 | 64 ms/step | ETA 39 min
+2026-10-17 21:47:44 | INFO | step   3800/40000 | mel 0.3401 | 66 ms/step | ETA 40 min
+2026-10-17 21:48:07 | INFO | step   4000/40000 | mel 0.3267 | 69 ms/step | ETA 41 min
+2026-10-17 21:48:07 | INFO | validation @ 4000 | val mel 0.3080 | best 0.3080 (saved) | patience 0/6
+2026-10-17 21:48:30 | INFO | step   4200/40000 | mel 0.3117 | 71 ms/step | ETA 42 min
+2026-10-17 21:48:53 | INFO | step   4400/40000 | mel 0.3142 | 73 ms/step | ETA 43 min
+2026-10-17 21:49:16 | INFO | step   4600/40000 | mel 0.3010 | 75 ms/step | ETA 44 min
+2026-10-17 21:49:39 | INFO | step   4800/40000 | mel 0.3082 | 77 ms/step | ETA 45 min
+2026-10-17 21:50:02 | INFO | step   5000/40000 | mel 0.3072 | 78 ms/step | ETA 46 min
+2026-10-17 21:50:02 | INFO | validation @ 5000 | val mel 0.2856 | best 0.2856 (saved) | patience 0/6
+2026-10-17 21:50:26 | INFO | step   5200/40000 | mel 0.2989 | 80 ms/step | ETA 46 min
+2026-10-17 21:50:49 | INFO | step   5400/40000 | mel 0.3006 | 81 ms/step | ETA 47 min
+2026-10-17 21:51:12 | INFO | step   5600/40000 | mel 0.2905 | 82 ms/step | ETA 47 min
+2026-10-17 21:51:36 | INFO | step   5800/40000 | mel 0.2890 | 83 ms/step | ETA 48 min
+2026-10-17 21:51:59 | INFO | step   6000/40000 | mel 0.2846 | 85 ms/step | ETA 48 min
+2026-10-17 21:51:59 | INFO | validation @ 6000 | val mel 0.2771 | best 0.2771 (saved) | patience 0/6
+2026-10-17 21:52:24 | INFO | step   6200/40000 | mel 0.2769 | 86 ms/step | ETA 48 min
+2026-10-17 21:52:49 | INFO | step   6400/40000 | mel 0.2789 | 87 ms/step | ETA 49 min
+2026-10-17 21:53:13 | INFO | step   6600/40000 | mel 0.2811 | 88 ms/step | ETA 49 min
+2026-10-17 21:53:37 | INFO | step   6800/40000 | mel 0.2710 | 89 ms/step | ETA 49 min
+2026-10-17 21:54:02 | INFO | step   7000/40000 | mel 0.2751 | 90 ms/step | ETA 49 min
+2026-10-17 21:54:02 | INFO | validation @ 7000 | val mel 0.2522 | best 0.2522 (saved) | patience 0/6
+2026-10-17 21:54:25 | INFO | step   7200/40000 | mel 0.2672 | 91 ms/step | ETA 50 min
+2026-10-17 21:54:50 | INFO | step   7400/40000 | mel 0.2696 | 92 ms/step | ETA 50 min
+2026-10-17 21:55:14 | INFO | step   7600/40000 | mel 0.2628 | 92 ms/step | ETA 50 min
+2026-10-17 21:55:38 | INFO | step   7800/40000 | mel 0.2655 | 93 ms/step | ETA 50 min
+2026-10-17 21:56:02 | INFO | step   8000/40000 | mel 0.2584 | 94 ms/step | ETA 50 min
+2026-10-17 21:56:02 | INFO | validation @ 8000 | val mel 0.2589 | best 0.2522 | patience 1/6
+2026-10-17 21:56:26 | INFO | step   8200/40000 | mel 0.2582 | 94 ms/step | ETA 50 min
+2026-10-17 21:56:50 | INFO | step   8400/40000 | mel 0.2597 | 95 ms/step | ETA 50 min
+2026-10-17 21:57:14 | INFO | step   8600/40000 | mel 0.2569 | 96 ms/step | ETA 50 min
+2026-10-17 21:57:37 | INFO | step   8800/40000 | mel 0.2559 | 96 ms/step | ETA 50 min
+2026-10-17 21:58:01 | INFO | step   9000/40000 | mel 0.2466 | 97 ms/step | ETA 50 min
+2026-10-17 21:58:01 | INFO | validation @ 9000 | val mel 0.2536 | best 0.2522 | patience 2/6
+2026-10-17 21:58:25 | INFO | step   9200/40000 | mel 0.2574 | 97 ms/step | ETA 50 min
+2026-10-17 21:58:49 | INFO | step   9400/40000 | mel 0.2464 | 98 ms/step | ETA 50 min
+2026-10-17 21:59:13 | INFO | step   9600/40000 | mel 0.2521 | 98 ms/step | ETA 50 min
+2026-10-17 21:59:37 | INFO | step   9800/40000 | mel 0.2558 | 99 ms/step | ETA 50 min
+2026-10-17 22:00:01 | INFO | step  10000/40000 | mel 0.2434 | 99 ms/step | ETA 49 min
+2026-10-17 22:00:01 | INFO | validation @ 10000 | val mel 0.2439 | best 0.2439 (saved) | patience 0/6
+2026-10-17 22:00:24 | INFO | step  10200/40000 | mel 0.2503 | 99 ms/step | ETA 49 min
+2026-10-17 22:00:48 | INFO | step  10400/40000 | mel 0.2419 | 100 ms/step | ETA 49 min
+2026-10-17 22:01:11 | INFO | step  10600/40000 | mel 0.2396 | 100 ms/step | ETA 49 min
+2026-10-17 22:01:36 | INFO | step  10800/40000 | mel 0.2444 | 100 ms/step | ETA 49 min
+2026-10-17 22:02:00 | INFO | step  11000/40000 | mel 0.2387 | 101 ms/step | ETA 49 min
+2026-10-17 22:02:01 | INFO | validation @ 11000 | val mel 0.2308 | best 0.2308 (saved) | patience 0/6
+2026-10-17 22:02:25 | INFO | step  11200/40000 | mel 0.2409 | 101 ms/step | ETA 49 min
+2026-10-17 22:02:49 | INFO | step  11400/40000 | mel 0.2451 | 102 ms/step | ETA 48 min
+2026-10-17 22:03:15 | INFO | step  11600/40000 | mel 0.2376 | 102 ms/step | ETA 48 min
+2026-10-17 22:03:40 | INFO | step  11800/40000 | mel 0.2357 | 102 ms/step | ETA 48 min
+2026-10-17 22:04:04 | INFO | step  12000/40000 | mel 0.2351 | 103 ms/step | ETA 48 min
+2026-10-17 22:04:05 | INFO | validation @ 12000 | val mel 0.2091 | best 0.2091 (saved) | patience 0/6
+2026-10-17 22:04:31 | INFO | step  12200/40000 | mel 0.2354 | 103 ms/step | ETA 48 min
+2026-10-17 22:04:55 | INFO | step  12400/40000 | mel 0.2337 | 104 ms/step | ETA 48 min
+2026-10-17 22:05:19 | INFO | step  12600/40000 | mel 0.2284 | 104 ms/step | ETA 47 min
+2026-10-17 22:05:44 | INFO | step  12800/40000 | mel 0.2295 | 104 ms/step | ETA 47 min
+2026-10-17 22:06:10 | INFO | step  13000/40000 | mel 0.2330 | 104 ms/step | ETA 47 min
+2026-10-17 22:06:10 | INFO | validation @ 13000 | val mel 0.2323 | best 0.2091 | patience 1/6
+2026-10-17 22:06:37 | INFO | step  13200/40000 | mel 0.2249 | 105 ms/step | ETA 47 min
+2026-10-17 22:07:03 | INFO | step  13400/40000 | mel 0.2289 | 105 ms/step | ETA 47 min
+2026-10-17 22:07:29 | INFO | step  13600/40000 | mel 0.2280 | 106 ms/step | ETA 46 min
+2026-10-17 22:07:54 | INFO | step  13800/40000 | mel 0.2276 | 106 ms/step | ETA 46 min
+2026-10-17 22:08:20 | INFO | step  14000/40000 | mel 0.2300 | 106 ms/step | ETA 46 min
+2026-10-17 22:08:20 | INFO | validation @ 14000 | val mel 0.2042 | best 0.2042 (saved) | patience 0/6
+2026-10-17 22:08:46 | INFO | step  14200/40000 | mel 0.2247 | 107 ms/step | ETA 46 min
+2026-10-17 22:09:13 | INFO | step  14400/40000 | mel 0.2291 | 107 ms/step | ETA 46 min
+2026-10-17 22:09:38 | INFO | step  14600/40000 | mel 0.2185 | 107 ms/step | ETA 45 min
+2026-10-17 22:10:03 | INFO | step  14800/40000 | mel 0.2195 | 108 ms/step | ETA 45 min
+2026-10-17 22:10:30 | INFO | step  15000/40000 | mel 0.2271 | 108 ms/step | ETA 45 min
+2026-10-17 22:10:30 | INFO | validation @ 15000 | val mel 0.2050 | best 0.2042 | patience 1/6
+2026-10-17 22:10:57 | INFO | step  15200/40000 | mel 0.2211 | 108 ms/step | ETA 45 min
+2026-10-17 22:11:48 | INFO | step  15400/40000 | mel 0.2215 | 110 ms/step | ETA 45 min
+2026-10-17 22:13:46 | INFO | step  15600/40000 | mel 0.2248 | 116 ms/step | ETA 47 min
+2026-10-17 22:15:44 | INFO | step  15800/40000 | mel 0.2225 | 122 ms/step | ETA 49 min
+2026-10-17 22:17:42 | INFO | step  16000/40000 | mel 0.2215 | 128 ms/step | ETA 51 min
+2026-10-17 22:17:43 | INFO | validation @ 16000 | val mel 0.2016 | best 0.2016 (saved) | patience 0/6
+2026-10-17 22:19:41 | INFO | step  16200/40000 | mel 0.2192 | 134 ms/step | ETA 53 min
+2026-10-17 22:20:52 | INFO | step  16400/40000 | mel 0.2086 | 137 ms/step | ETA 54 min
+2026-10-17 22:21:14 | INFO | step  16600/40000 | mel 0.2170 | 136 ms/step | ETA 53 min
+2026-10-17 22:21:36 | INFO | step  16800/40000 | mel 0.2152 | 136 ms/step | ETA 53 min
+2026-10-17 22:21:58 | INFO | step  17000/40000 | mel 0.2192 | 136 ms/step | ETA 52 min
+2026-10-17 22:21:58 | INFO | validation @ 17000 | val mel 0.2147 | best 0.2016 | patience 1/6
+2026-10-17 22:22:21 | INFO | step  17200/40000 | mel 0.2151 | 135 ms/step | ETA 51 min
+2026-10-17 22:22:44 | INFO | step  17400/40000 | mel 0.2115 | 135 ms/step | ETA 51 min
+2026-10-17 22:23:07 | INFO | step  17600/40000 | mel 0.2166 | 135 ms/step | ETA 50 min
+2026-10-17 22:23:30 | INFO | step  17800/40000 | mel 0.2128 | 135 ms/step | ETA 50 min
+2026-10-17 22:23:53 | INFO | step  18000/40000 | mel 0.2127 | 135 ms/step | ETA 49 min
+2026-10-17 22:23:53 | INFO | validation @ 18000 | val mel 0.1989 | best 0.1989 (saved) | patience 0/6
+2026-10-17 22:24:17 | INFO | step  18200/40000 | mel 0.2157 | 134 ms/step | ETA 49 min
+2026-10-17 22:24:40 | INFO | step  18400/40000 | mel 0.2063 | 134 ms/step | ETA 48 min
+2026-10-17 22:25:05 | INFO | step  18600/40000 | mel 0.2138 | 134 ms/step | ETA 48 min
+2026-10-17 22:25:29 | INFO | step  18800/40000 | mel 0.2112 | 134 ms/step | ETA 47 min
+2026-10-17 22:25:53 | INFO | step  19000/40000 | mel 0.2127 | 134 ms/step | ETA 47 min
+2026-10-17 22:25:53 | INFO | validation @ 19000 | val mel 0.1999 | best 0.1989 | patience 1/6
+2026-10-17 22:26:19 | INFO | step  19200/40000 | mel 0.2065 | 134 ms/step | ETA 46 min
+2026-10-17 22:26:44 | INFO | step  19400/40000 | mel 0.2090 | 134 ms/step | ETA 46 min
+2026-10-17 22:27:09 | INFO | step  19600/40000 | mel 0.2098 | 134 ms/step | ETA 45 min
+2026-10-17 22:27:34 | INFO | step  19800/40000 | mel 0.2059 | 133 ms/step | ETA 45 min
+2026-10-17 22:28:00 | INFO | step  20000/40000 | mel 0.2103 | 133 ms/step | ETA 44 min
+2026-10-17 22:28:00 | INFO | validation @ 20000 | val mel 0.2135 | best 0.1989 | patience 2/6
+2026-10-17 22:28:25 | INFO | step  20200/40000 | mel 0.2058 | 133 ms/step | ETA 44 min
+2026-10-17 22:28:50 | INFO | step  20400/40000 | mel 0.2113 | 133 ms/step | ETA 44 min
+2026-10-17 22:29:16 | INFO | step  20600/40000 | mel 0.2110 | 133 ms/step | ETA 43 min
+2026-10-17 22:30:57 | INFO | step  20800/40000 | mel 0.2092 | 137 ms/step | ETA 44 min
+2026-10-17 22:32:55 | INFO | step  21000/40000 | mel 0.2053 | 141 ms/step | ETA 45 min
+2026-10-17 22:32:56 | INFO | validation @ 21000 | val mel 0.1952 | best 0.1952 (saved) | patience 0/6
+2026-10-17 22:34:54 | INFO | step  21200/40000 | mel 0.2097 | 145 ms/step | ETA 46 min
+2026-10-17 22:36:52 | INFO | step  21400/40000 | mel 0.2032 | 150 ms/step | ETA 46 min
+2026-10-17 22:38:50 | INFO | step  21600/40000 | mel 0.2079 | 154 ms/step | ETA 47 min
+2026-10-17 22:39:56 | INFO | step  21800/40000 | mel 0.2005 | 155 ms/step | ETA 47 min
+2026-10-17 22:40:18 | INFO | step  22000/40000 | mel 0.2050 | 155 ms/step | ETA 46 min
+2026-10-17 22:40:18 | INFO | validation @ 22000 | val mel 0.2036 | best 0.1952 | patience 1/6
+2026-10-17 22:40:40 | INFO | step  22200/40000 | mel 0.1988 | 154 ms/step | ETA 46 min
+2026-10-17 22:41:03 | INFO | step  22400/40000 | mel 0.2027 | 154 ms/step | ETA 45 min
+2026-10-17 22:41:25 | INFO | step  22600/40000 | mel 0.2034 | 154 ms/step | ETA 45 min
+2026-10-17 22:41:48 | INFO | step  22800/40000 | mel 0.2006 | 153 ms/step | ETA 44 min
+2026-10-17 22:42:12 | INFO | step  23000/40000 | mel 0.2017 | 153 ms/step | ETA 43 min
+2026-10-17 22:42:12 | INFO | validation @ 23000 | val mel 0.1929 | best 0.1929 (saved) | patience 0/6
+2026-10-17 22:42:37 | INFO | step  23200/40000 | mel 0.1982 | 153 ms/step | ETA 43 min
+2026-10-17 22:43:01 | INFO | step  23400/40000 | mel 0.2031 | 153 ms/step | ETA 42 min
+2026-10-17 22:43:25 | INFO | step  23600/40000 | mel 0.2014 | 152 ms/step | ETA 42 min
+2026-10-17 22:43:49 | INFO | step  23800/40000 | mel 0.1999 | 152 ms/step | ETA 41 min
+2026-10-17 22:44:13 | INFO | step  24000/40000 | mel 0.1993 | 152 ms/step | ETA 40 min
+2026-10-17 22:44:13 | INFO | validation @ 24000 | val mel 0.1971 | best 0.1929 | patience 1/6
+2026-10-17 22:44:37 | INFO | step  24200/40000 | mel 0.2035 | 151 ms/step | ETA 40 min
+2026-10-17 22:45:01 | INFO | step  24400/40000 | mel 0.1908 | 151 ms/step | ETA 39 min
+2026-10-17 22:45:28 | INFO | step  24600/40000 | mel 0.1945 | 151 ms/step | ETA 39 min
+2026-10-17 22:45:55 | INFO | step  24800/40000 | mel 0.1969 | 151 ms/step | ETA 38 min
+2026-10-17 22:46:21 | INFO | step  25000/40000 | mel 0.2008 | 151 ms/step | ETA 38 min
+2026-10-17 22:46:21 | INFO | validation @ 25000 | val mel 0.1898 | best 0.1898 (saved) | patience 0/6
+2026-10-17 22:46:47 | INFO | step  25200/40000 | mel 0.1934 | 151 ms/step | ETA 37 min
+2026-10-17 22:48:42 | INFO | step  25400/40000 | mel 0.1961 | 154 ms/step | ETA 37 min
+2026-10-17 22:50:40 | INFO | step  25600/40000 | mel 0.1965 | 157 ms/step | ETA 38 min
+2026-10-17 22:52:38 | INFO | step  25800/40000 | mel 0.1903 | 161 ms/step | ETA 38 min
+2026-10-17 22:54:37 | INFO | step  26000/40000 | mel 0.1955 | 164 ms/step | ETA 38 min
+2026-10-17 22:54:37 | INFO | validation @ 26000 | val mel 0.1885 | best 0.1885 (saved) | patience 0/6
+2026-10-17 22:56:36 | INFO | step  26200/40000 | mel 0.1918 | 167 ms/step | ETA 38 min
+2026-10-17 22:58:03 | INFO | step  26400/40000 | mel 0.1934 | 169 ms/step | ETA 38 min
+2026-10-17 22:58:24 | INFO | step  26600/40000 | mel 0.1910 | 169 ms/step | ETA 38 min
+2026-10-17 22:58:46 | INFO | step  26800/40000 | mel 0.1906 | 168 ms/step | ETA 37 min
+2026-10-17 22:59:09 | INFO | step  27000/40000 | mel 0.1975 | 168 ms/step | ETA 36 min
+2026-10-17 22:59:09 | INFO | validation @ 27000 | val mel 0.2026 | best 0.1885 | patience 1/6
+2026-10-17 22:59:32 | INFO | step  27200/40000 | mel 0.1945 | 168 ms/step | ETA 36 min
+2026-10-17 22:59:55 | INFO | step  27400/40000 | mel 0.1924 | 167 ms/step | ETA 35 min
+2026-10-17 23:00:18 | INFO | step  27600/40000 | mel 0.1924 | 167 ms/step | ETA 34 min
+2026-10-17 23:00:41 | INFO | step  27800/40000 | mel 0.1901 | 167 ms/step | ETA 34 min
+2026-10-17 23:01:04 | INFO | step  28000/40000 | mel 0.1953 | 166 ms/step | ETA 33 min
+2026-10-17 23:01:04 | INFO | validation @ 28000 | val mel 0.1878 | best 0.1878 (saved) | patience 0/6
+2026-10-17 23:01:28 | INFO | step  28200/40000 | mel 0.1932 | 166 ms/step | ETA 33 min
+2026-10-17 23:01:53 | INFO | step  28400/40000 | mel 0.1940 | 166 ms/step | ETA 32 min
+2026-10-17 23:02:17 | INFO | step  28600/40000 | mel 0.1906 | 165 ms/step | ETA 31 min
+2026-10-17 23:02:44 | INFO | step  28800/40000 | mel 0.1920 | 165 ms/step | ETA 31 min
+2026-10-17 23:03:08 | INFO | step  29000/40000 | mel 0.1875 | 165 ms/step | ETA 30 min
+2026-10-17 23:03:08 | INFO | validation @ 29000 | val mel 0.1870 | best 0.1870 (saved) | patience 0/6
+2026-10-17 23:03:33 | INFO | step  29200/40000 | mel 0.1856 | 164 ms/step | ETA 30 min
+2026-10-17 23:03:59 | INFO | step  29400/40000 | mel 0.1914 | 164 ms/step | ETA 29 min
+2026-10-17 23:04:26 | INFO | step  29600/40000 | mel 0.1902 | 164 ms/step | ETA 28 min
+2026-10-17 23:05:26 | INFO | step  29800/40000 | mel 0.1887 | 165 ms/step | ETA 28 min
+2026-10-17 23:07:24 | INFO | step  30000/40000 | mel 0.1922 | 168 ms/step | ETA 28 min
+2026-10-17 23:07:24 | INFO | validation @ 30000 | val mel 0.1854 | best 0.1854 (saved) | patience 0/6
+2026-10-17 23:09:23 | INFO | step  30200/40000 | mel 0.1872 | 171 ms/step | ETA 28 min
+2026-10-17 23:11:21 | INFO | step  30400/40000 | mel 0.1863 | 173 ms/step | ETA 28 min
+2026-10-17 23:13:19 | INFO | step  30600/40000 | mel 0.1919 | 176 ms/step | ETA 28 min
+2026-10-17 23:15:18 | INFO | step  30800/40000 | mel 0.1870 | 179 ms/step | ETA 27 min
+2026-10-17 23:17:16 | INFO | step  31000/40000 | mel 0.1872 | 181 ms/step | ETA 27 min
+2026-10-17 23:17:17 | INFO | validation @ 31000 | val mel 0.1855 | best 0.1854 | patience 1/6
+2026-10-17 23:18:55 | INFO | step  31200/40000 | mel 0.1863 | 183 ms/step | ETA 27 min
+2026-10-17 23:19:17 | INFO | step  31400/40000 | mel 0.1907 | 183 ms/step | ETA 26 min
+2026-10-17 23:19:39 | INFO | step  31600/40000 | mel 0.1815 | 182 ms/step | ETA 26 min
+2026-10-17 23:20:01 | INFO | step  31800/40000 | mel 0.1909 | 182 ms/step | ETA 25 min
+2026-10-17 23:20:23 | INFO | step  32000/40000 | mel 0.1824 | 182 ms/step | ETA 24 min
+2026-10-17 23:20:24 | INFO | validation @ 32000 | val mel 0.1942 | best 0.1854 | patience 2/6
+2026-10-17 23:20:47 | INFO | step  32200/40000 | mel 0.1857 | 181 ms/step | ETA 24 min
+2026-10-17 23:21:10 | INFO | step  32400/40000 | mel 0.1840 | 181 ms/step | ETA 23 min
+2026-10-17 23:21:33 | INFO | step  32600/40000 | mel 0.1849 | 180 ms/step | ETA 22 min
+2026-10-17 23:21:56 | INFO | step  32800/40000 | mel 0.1850 | 180 ms/step | ETA 22 min
+2026-10-17 23:22:19 | INFO | step  33000/40000 | mel 0.1873 | 180 ms/step | ETA 21 min
+2026-10-17 23:22:20 | INFO | validation @ 33000 | val mel 0.1814 | best 0.1814 (saved) | patience 0/6
+2026-10-17 23:22:46 | INFO | step  33200/40000 | mel 0.1806 | 179 ms/step | ETA 20 min
+2026-10-17 23:23:10 | INFO | step  33400/40000 | mel 0.1830 | 179 ms/step | ETA 20 min
+2026-10-17 23:23:36 | INFO | step  33600/40000 | mel 0.1854 | 179 ms/step | ETA 19 min
+2026-10-17 23:24:02 | INFO | step  33800/40000 | mel 0.1869 | 178 ms/step | ETA 18 min
+2026-10-17 23:24:28 | INFO | step  34000/40000 | mel 0.1815 | 178 ms/step | ETA 18 min
+2026-10-17 23:24:28 | INFO | validation @ 34000 | val mel 0.1792 | best 0.1792 (saved) | patience 0/6
+2026-10-17 23:24:54 | INFO | step  34200/40000 | mel 0.1843 | 178 ms/step | ETA 17 min
+2026-10-17 23:25:20 | INFO | step  34400/40000 | mel 0.1809 | 178 ms/step | ETA 17 min
+2026-10-17 23:25:46 | INFO | step  34600/40000 | mel 0.1806 | 177 ms/step | ETA 16 min
+2026-10-17 23:26:48 | INFO | step  34800/40000 | mel 0.1797 | 178 ms/step | ETA 15 min
+2026-10-17 23:28:46 | INFO | step  35000/40000 | mel 0.1850 | 180 ms/step | ETA 15 min
+2026-10-17 23:28:47 | INFO | validation @ 35000 | val mel 0.1842 | best 0.1792 | patience 1/6
+2026-10-17 23:30:45 | INFO | step  35200/40000 | mel 0.1836 | 183 ms/step | ETA 15 min
+2026-10-17 23:32:43 | INFO | step  35400/40000 | mel 0.1807 | 185 ms/step | ETA 14 min
+2026-10-17 23:34:42 | INFO | step  35600/40000 | mel 0.1820 | 187 ms/step | ETA 14 min
+2026-10-17 23:36:40 | INFO | step  35800/40000 | mel 0.1807 | 190 ms/step | ETA 13 min
+2026-10-17 23:38:38 | INFO | step  36000/40000 | mel 0.1755 | 192 ms/step | ETA 13 min
+2026-10-17 23:38:39 | INFO | validation @ 36000 | val mel 0.1908 | best 0.1792 | patience 2/6
+2026-10-17 23:40:17 | INFO | step  36200/40000 | mel 0.1786 | 194 ms/step | ETA 12 min
+2026-10-17 23:40:39 | INFO | step  36400/40000 | mel 0.1815 | 193 ms/step | ETA 12 min
+2026-10-17 23:41:01 | INFO | step  36600/40000 | mel 0.1773 | 193 ms/step | ETA 11 min
+2026-10-17 23:41:23 | INFO | step  36800/40000 | mel 0.1758 | 192 ms/step | ETA 10 min
+2026-10-17 23:41:46 | INFO | step  37000/40000 | mel 0.1811 | 192 ms/step | ETA 10 min
+2026-10-17 23:41:46 | INFO | validation @ 37000 | val mel 0.1800 | best 0.1792 | patience 3/6
+2026-10-17 23:42:09 | INFO | step  37200/40000 | mel 0.1787 | 191 ms/step | ETA 9 min
+2026-10-17 23:42:32 | INFO | step  37400/40000 | mel 0.1789 | 191 ms/step | ETA 8 min
+2026-10-17 23:42:55 | INFO | step  37600/40000 | mel 0.1754 | 191 ms/step | ETA 8 min
+2026-10-17 23:43:20 | INFO | step  37800/40000 | mel 0.1798 | 190 ms/step | ETA 7 min
+2026-10-17 23:43:45 | INFO | step  38000/40000 | mel 0.1785 | 190 ms/step | ETA 6 min
+2026-10-17 23:43:45 | INFO | validation @ 38000 | val mel 0.1826 | best 0.1792 | patience 4/6
+2026-10-17 23:44:10 | INFO | step  38200/40000 | mel 0.1795 | 189 ms/step | ETA 6 min
+2026-10-17 23:44:35 | INFO | step  38400/40000 | mel 0.1791 | 189 ms/step | ETA 5 min
+2026-10-17 23:45:00 | INFO | step  38600/40000 | mel 0.1798 | 189 ms/step | ETA 4 min
+2026-10-17 23:45:27 | INFO | step  38800/40000 | mel 0.1757 | 189 ms/step | ETA 4 min
+2026-10-17 23:45:54 | INFO | step  39000/40000 | mel 0.1766 | 188 ms/step | ETA 3 min
+2026-10-17 23:45:54 | INFO | validation @ 39000 | val mel 0.1830 | best 0.1792 | patience 5/6
+2026-10-17 23:46:21 | INFO | step  39200/40000 | mel 0.1773 | 188 ms/step | ETA 3 min
+2026-10-17 23:46:48 | INFO | step  39400/40000 | mel 0.1753 | 188 ms/step | ETA 2 min
+2026-10-17 23:47:15 | INFO | step  39600/40000 | mel 0.1764 | 187 ms/step | ETA 1 min
+2026-10-17 23:48:53 | INFO | step  39800/40000 | mel 0.1781 | 189 ms/step | ETA 1 min
+2026-10-17 23:50:51 | INFO | step  40000/40000 | mel 0.1746 | 191 ms/step | ETA 0 min
+2026-10-17 23:50:52 | INFO | validation @ 40000 | val mel 0.1818 | best 0.1792 | patience 6/6
+2026-10-17 23:50:52 | INFO | Early stopping at step 40000: no improvement for 6 validations
+2026-10-17 23:50:52 | INFO | Finished in 127.3 min, best val mel 0.1792
+2026-10-17 23:50:53 | INFO | Rendering audio with the neural vocoder (free_spoken_digit/checkpoints/vocoder_8k.pt)
+2026-10-17 23:54:42 | INFO | Griffin-Lim (256 iterations): PESQ 1.97, STOI 0.416, 359.4 ms/clip
+2026-10-17 23:54:48 | INFO | Neural vocoder: PESQ 3.55, STOI 0.490, 11.2 ms/clip

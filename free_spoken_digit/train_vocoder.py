@@ -88,7 +88,10 @@ def render_all(mels: torch.Tensor) -> dict:
 def evaluate(device: torch.device) -> None:
     """Score Griffin-Lim vs vocoder against the true test recordings; write table, figure and example audio."""
     mel = build_mel().to(device)
-    *_, (mels, wavs) = load_splits(mel, device)
+    data = SpectrogramDataModule(configs.SPECTROGRAMS_DIR, num_workers=0)
+    data.setup()
+    test_labels = [data.test_dataset[i][1] for i in range(len(data.test_dataset))]
+    mels, wavs = load_split(data.test_dataset, mel, device)
     mels, references = mels.cpu(), wavs.cpu().numpy()
     results = []
     for name, (rendered, ms) in render_all(mels).items():
@@ -96,7 +99,7 @@ def evaluate(device: torch.device) -> None:
         results.append({'method': name, 'pesq': float(np.nanmean(scores[:, 0])),
                         'stoi': float(scores[:, 1].mean()), 'ms_per_clip': ms, 'audio': rendered})
         logging.info(f"{name}: PESQ {results[-1]['pesq']:.2f}, STOI {results[-1]['stoi']:.3f}, {ms:.1f} ms/clip")
-    save_examples(references, results)
+    save_examples(references, results, test_labels)
     for r in results:
         r.pop('audio')
     with open('assets/vocoder_results.json', 'w') as f:
@@ -104,18 +107,21 @@ def evaluate(device: torch.device) -> None:
     update_readme({'vocoder': vocoder_table(results)})
 
 
-def save_examples(references: np.ndarray, results: list, clips: tuple = (0, 1, 2)) -> None:
-    """Write recording / Griffin-Lim / vocoder versions of a few test clips and the comparison figure."""
+def save_examples(references: np.ndarray, results: list, test_labels: list, digits: tuple = (0, 5)) -> None:
+    """Write recording / Griffin-Lim / vocoder versions of selected test digits and the comparison figure."""
     out_dir = 'free_spoken_digit/samples/vocoder_comparison'
     os.makedirs(out_dir, exist_ok=True)
-    for c in clips:
+    first_clip = test_labels.index(digits[0])
+    for d in digits:
+        c = test_labels.index(d)
         versions = [('1_recording', references[c]), ('2_griffin_lim', results[0]['audio'][c]),
                     ('3_vocoder', results[1]['audio'][c])]
         for suffix, audio in versions:
             audio = 0.9 * audio / max(np.abs(audio).max(), 1e-8)
-            torchaudio.save(f"{out_dir}/clip{c}_{suffix}.wav", torch.from_numpy(audio).float()[None], CONFIG.sample_rate)
-    signals = {'Recording': references[clips[0]], **{r['method']: r['audio'][clips[0]] for r in results}}
+            torchaudio.save(f"{out_dir}/digit_{d}_{suffix}.wav", torch.from_numpy(audio).float()[None], CONFIG.sample_rate)
+    signals = {'Recording': references[first_clip], **{r['method']: r['audio'][first_clip] for r in results}}
     plot_audio_comparison(signals, CONFIG.sample_rate, 'assets/vocoder_comparison.png')
+
 
 
 if __name__ == '__main__':

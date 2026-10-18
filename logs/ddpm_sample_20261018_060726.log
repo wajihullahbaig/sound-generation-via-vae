@@ -1,0 +1,3 @@
+2026-10-18 06:07:26 | INFO | Logging to logs\ddpm_sample_20261018_060726.log
+2026-10-18 06:07:26 | INFO | Rendering audio with the neural vocoder (free_spoken_digit/checkpoints/vocoder_8k.pt)
+2026-10-18 06:07:37 | INFO | Wrote 10 samples to free_spoken_digit/samples\ddpm

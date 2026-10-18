@@ -1,7 +1,0 @@
-2026-10-17 02:47:35 | INFO | Logging to logs\evaluate_generative_20261017_024735.log
-2026-10-17 02:47:38 | INFO | Real recordings (reference): FD 0.17
-2026-10-17 02:47:38 | INFO | Classifier accuracy on real test clips: 98.7%
-2026-10-17 02:47:39 | INFO | VAE (prior samples): FD 16.26, 1.2 ms/sample
-2026-10-17 02:51:18 | INFO | DDPM: FD 6.39, accuracy 95.1%, 218.6 ms/sample
-2026-10-17 02:55:08 | INFO | Flow Matching: FD 4.13, accuracy 99.9%, 229.8 ms/sample
-2026-10-17 02:55:11 | INFO | Wrote figures to assets/ and updated README sections: generation, vae

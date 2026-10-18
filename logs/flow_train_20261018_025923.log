@@ -1,0 +1,60 @@
+2026-10-18 02:59:23 | INFO | Logging to logs\flow_train_20261018_025923.log
+2026-10-18 02:59:26 | INFO | flow: 8.4M parameters
+2026-10-18 02:59:26 | INFO | Training steps 1..60000 (batch 64, 2160 clips, validate every 2000, patience 5)
+2026-10-18 03:03:35 | INFO | step    500/60000 | loss 0.7756 | lr 1.0e-04 | 497 ms/step | ETA 493 min
+2026-10-18 03:07:43 | INFO | step   1000/60000 | loss 0.0800 | lr 2.0e-04 | 497 ms/step | ETA 489 min
+2026-10-18 03:11:51 | INFO | step   1500/60000 | loss 0.0520 | lr 2.0e-04 | 497 ms/step | ETA 485 min
+2026-10-18 03:16:00 | INFO | step   2000/60000 | loss 0.0427 | lr 2.0e-04 | 497 ms/step | ETA 480 min
+2026-10-18 03:16:03 | INFO | validation @ 2000 | val (EMA) 0.3369 | best 0.3369 (saved) | patience 0/5
+2026-10-18 03:20:12 | INFO | step   2500/60000 | loss 0.0379 | lr 2.0e-04 | 498 ms/step | ETA 478 min
+2026-10-18 03:24:20 | INFO | step   3000/60000 | loss 0.0350 | lr 2.0e-04 | 498 ms/step | ETA 473 min
+2026-10-18 03:28:29 | INFO | step   3500/60000 | loss 0.0333 | lr 2.0e-04 | 498 ms/step | ETA 469 min
+2026-10-18 03:32:37 | INFO | step   4000/60000 | loss 0.0322 | lr 2.0e-04 | 498 ms/step | ETA 465 min
+2026-10-18 03:32:41 | INFO | validation @ 4000 | val (EMA) 0.0658 | best 0.0658 (saved) | patience 0/5
+2026-10-18 03:36:49 | INFO | step   4500/60000 | loss 0.0312 | lr 2.0e-04 | 499 ms/step | ETA 461 min
+2026-10-18 03:40:57 | INFO | step   5000/60000 | loss 0.0302 | lr 2.0e-04 | 498 ms/step | ETA 457 min
+2026-10-18 03:45:06 | INFO | step   5500/60000 | loss 0.0293 | lr 2.0e-04 | 498 ms/step | ETA 453 min
+2026-10-18 03:49:14 | INFO | step   6000/60000 | loss 0.0287 | lr 2.0e-04 | 498 ms/step | ETA 448 min
+2026-10-18 03:49:18 | INFO | validation @ 6000 | val (EMA) 0.0336 | best 0.0336 (saved) | patience 0/5
+2026-10-18 03:53:26 | INFO | step   6500/60000 | loss 0.0280 | lr 2.0e-04 | 499 ms/step | ETA 445 min
+2026-10-18 03:57:35 | INFO | step   7000/60000 | loss 0.0276 | lr 2.0e-04 | 498 ms/step | ETA 440 min
+2026-10-18 04:01:43 | INFO | step   7500/60000 | loss 0.0275 | lr 2.0e-04 | 498 ms/step | ETA 436 min
+2026-10-18 04:05:51 | INFO | step   8000/60000 | loss 0.0269 | lr 2.0e-04 | 498 ms/step | ETA 432 min
+2026-10-18 04:05:55 | INFO | validation @ 8000 | val (EMA) 0.0286 | best 0.0286 (saved) | patience 0/5
+2026-10-18 04:10:04 | INFO | step   8500/60000 | loss 0.0265 | lr 2.0e-04 | 499 ms/step | ETA 428 min
+2026-10-18 04:14:12 | INFO | step   9000/60000 | loss 0.0261 | lr 2.0e-04 | 498 ms/step | ETA 424 min
+2026-10-18 04:18:20 | INFO | step   9500/60000 | loss 0.0256 | lr 2.0e-04 | 498 ms/step | ETA 419 min
+2026-10-18 04:22:29 | INFO | step  10000/60000 | loss 0.0252 | lr 2.0e-04 | 498 ms/step | ETA 415 min
+2026-10-18 04:22:32 | INFO | validation @ 10000 | val (EMA) 0.0272 | best 0.0272 (saved) | patience 0/5
+2026-10-18 04:26:41 | INFO | step  10500/60000 | loss 0.0249 | lr 2.0e-04 | 499 ms/step | ETA 411 min
+2026-10-18 04:30:50 | INFO | step  11000/60000 | loss 0.0248 | lr 2.0e-04 | 499 ms/step | ETA 407 min
+2026-10-18 04:34:58 | INFO | step  11500/60000 | loss 0.0243 | lr 2.0e-04 | 498 ms/step | ETA 403 min
+2026-10-18 04:39:06 | INFO | step  12000/60000 | loss 0.0240 | lr 2.0e-04 | 498 ms/step | ETA 399 min
+2026-10-18 04:39:10 | INFO | validation @ 12000 | val (EMA) 0.0254 | best 0.0254 (saved) | patience 0/5
+2026-10-18 04:43:20 | INFO | step  12500/60000 | loss 0.0240 | lr 2.0e-04 | 499 ms/step | ETA 395 min
+2026-10-18 04:47:49 | INFO | step  13000/60000 | loss 0.0233 | lr 2.0e-04 | 500 ms/step | ETA 392 min
+2026-10-18 04:52:58 | INFO | step  13500/60000 | loss 0.0231 | lr 2.0e-04 | 505 ms/step | ETA 391 min
+2026-10-18 04:57:58 | INFO | step  14000/60000 | loss 0.0229 | lr 2.0e-04 | 508 ms/step | ETA 389 min
+2026-10-18 04:58:01 | INFO | validation @ 14000 | val (EMA) 0.0275 | best 0.0254 | patience 1/5
+2026-10-18 05:02:11 | INFO | step  14500/60000 | loss 0.0226 | lr 2.0e-04 | 508 ms/step | ETA 385 min
+2026-10-18 05:06:19 | INFO | step  15000/60000 | loss 0.0227 | lr 2.0e-04 | 508 ms/step | ETA 381 min
+2026-10-18 05:10:27 | INFO | step  15500/60000 | loss 0.0221 | lr 2.0e-04 | 507 ms/step | ETA 376 min
+2026-10-18 05:14:37 | INFO | step  16000/60000 | loss 0.0217 | lr 2.0e-04 | 507 ms/step | ETA 372 min
+2026-10-18 05:14:40 | INFO | validation @ 16000 | val (EMA) 0.0275 | best 0.0254 | patience 2/5
+2026-10-18 05:18:49 | INFO | step  16500/60000 | loss 0.0216 | lr 2.0e-04 | 507 ms/step | ETA 367 min
+2026-10-18 05:22:58 | INFO | step  17000/60000 | loss 0.0212 | lr 2.0e-04 | 507 ms/step | ETA 363 min
+2026-10-18 05:27:07 | INFO | step  17500/60000 | loss 0.0212 | lr 2.0e-04 | 506 ms/step | ETA 359 min
+2026-10-18 05:31:15 | INFO | step  18000/60000 | loss 0.0211 | lr 2.0e-04 | 506 ms/step | ETA 354 min
+2026-10-18 05:31:19 | INFO | validation @ 18000 | val (EMA) 0.0276 | best 0.0254 | patience 3/5
+2026-10-18 05:36:18 | INFO | step  18500/60000 | loss 0.0209 | lr 2.0e-04 | 509 ms/step | ETA 352 min
+2026-10-18 05:42:24 | INFO | step  19000/60000 | loss 0.0206 | lr 2.0e-04 | 515 ms/step | ETA 352 min
+2026-10-18 05:46:32 | INFO | step  19500/60000 | loss 0.0204 | lr 2.0e-04 | 514 ms/step | ETA 347 min
+2026-10-18 05:50:40 | INFO | step  20000/60000 | loss 0.0204 | lr 2.0e-04 | 514 ms/step | ETA 342 min
+2026-10-18 05:50:44 | INFO | validation @ 20000 | val (EMA) 0.0299 | best 0.0254 | patience 4/5
+2026-10-18 05:54:52 | INFO | step  20500/60000 | loss 0.0199 | lr 2.0e-04 | 513 ms/step | ETA 338 min
+2026-10-18 05:59:00 | INFO | step  21000/60000 | loss 0.0199 | lr 2.0e-04 | 513 ms/step | ETA 333 min
+2026-10-18 06:03:08 | INFO | step  21500/60000 | loss 0.0195 | lr 2.0e-04 | 513 ms/step | ETA 329 min
+2026-10-18 06:07:16 | INFO | step  22000/60000 | loss 0.0194 | lr 2.0e-04 | 512 ms/step | ETA 324 min
+2026-10-18 06:07:19 | INFO | validation @ 22000 | val (EMA) 0.0307 | best 0.0254 | patience 5/5
+2026-10-18 06:07:19 | INFO | Early stopping at step 22000: no improvement for 5 validations
+2026-10-18 06:07:20 | INFO | Finished in 187.9 min, best val (EMA) 0.0254

@@ -1,6 +1,6 @@
 # sound-generation-via-vae
 
-Generating spoken digits from mel spectrograms with three generative models in PyTorch: a **convolutional VAE**, a **DDPM** (denoising diffusion) and **Flow Matching**. All three share one spectrogram pipeline.
+Generating spoken digits from mel spectrograms with three generative models in PyTorch: a **convolutional VAE**, a **DDPM** ([Denoising Diffusion Probabilistic Models](https://arxiv.org/abs/2006.11239)) and **Flow Matching** ([Flow Matching for Generative Modeling](https://arxiv.org/abs/2210.02747)). All three share one spectrogram pipeline.
 
 Raw audio has too many samples per second to model directly. Each recording becomes a small mel spectrogram (64 × 256), the models learn that image, and a neural vocoder turns generated spectrograms back into audio.
 
@@ -26,9 +26,9 @@ All models are trained on the [Free Spoken Digit Dataset](https://github.com/Jak
 | Model | Fréchet distance ↓ | Digit accuracy ↑ | ms / sample ↓ |
 |---|---|---|---|
 | Real recordings (reference) | 0.17 | 98.7% | — |
-| VAE (prior samples) | 16.26 | — | 1.2 |
-| DDPM | 6.39 | 95.1% | 218.6 |
-| Flow Matching | **4.13** | 99.9% | 229.8 |
+| VAE (prior samples) | 18.30 | — | 1.2 |
+| DDPM | 6.40 | 95.9% | 212.2 |
+| Flow Matching | **3.67** | 99.9% | 223.6 |
 <!-- /results:generation -->
 
 - **Fréchet distance:** distance between generated and real test spectrograms in the feature space of a digit classifier trained on real data (as in FID and FAD). Lower is better.
@@ -56,7 +56,7 @@ The confusion matrices show which digit each model actually produced for every r
 |---|---|
 | v1: 22.05 kHz, per-file min/max normalisation | 4.15 |
 | v2: 8 kHz, dataset-wide dB range | 2.61 |
-| **v3 (current): 8 kHz, per-clip peak normalisation** | **3.69** |
+| **v3 (current): 8 kHz, per-clip peak normalisation** | **3.76** |
 
 _The rows are not directly comparable. v1 and v2 clipped quiet speakers' low-level detail to the floor, which is trivially easy to reconstruct. v3 keeps the full 80 dB below each clip's own peak, so the same 60 dB "speech" region now includes much more quiet detail. The v3 number is the honest baseline for future changes._
 <!-- /results:vae -->
@@ -72,8 +72,8 @@ A spectrogram stores only *how much* energy each frequency has, not its phase. G
 <!-- results:vocoder -->
 | Spectrogram → audio | PESQ (narrowband, 1–4.5) ↑ | STOI (0–1) ↑ | ms / clip (CPU) ↓ |
 |---|---|---|---|
-| Griffin-Lim (256 iterations) | 1.97 | 0.416 | 336.0 |
-| Neural vocoder | 3.42 | 0.484 | 10.2 |
+| Griffin-Lim (256 iterations) | 1.97 | 0.416 | 359.4 |
+| Neural vocoder | 3.55 | 0.490 | 11.2 |
 <!-- /results:vocoder -->
 
 - **PESQ:** ITU-T P.862 perceived speech quality, narrowband mode for 8 kHz.
@@ -83,17 +83,31 @@ The figure shows one test clip at a finer STFT than the models use. Griffin-Lim'
 
 ![Vocoder comparison](assets/vocoder_comparison.png)
 
-### Audio samples
+### Audio samples: Actual vs. Model
 
-Listen in [`free_spoken_digit/samples/`](free_spoken_digit/samples):
+#### 1. Generation & Reconstruction (2 digits per method)
+
+| Digit | Actual Recording (Test) | VAE (Reconstruction) | VAE (Prior Sample) | DDPM | Flow Matching |
+|---|---|---|---|---|---|
+| **Digit 0** | <audio controls src="free_spoken_digit/samples/real/digit_0.wav"><a href="free_spoken_digit/samples/real/digit_0.wav">▶ Listen</a></audio> | <audio controls src="free_spoken_digit/samples/vae_recon/digit_0.wav"><a href="free_spoken_digit/samples/vae_recon/digit_0.wav">▶ Listen</a></audio> | <audio controls src="free_spoken_digit/samples/vae_prior/sample_0.wav"><a href="free_spoken_digit/samples/vae_prior/sample_0.wav">▶ Listen</a></audio> | <audio controls src="free_spoken_digit/samples/ddpm/digit_0.wav"><a href="free_spoken_digit/samples/ddpm/digit_0.wav">▶ Listen</a></audio> | <audio controls src="free_spoken_digit/samples/flow/digit_0.wav"><a href="free_spoken_digit/samples/flow/digit_0.wav">▶ Listen</a></audio> |
+| **Digit 5** | <audio controls src="free_spoken_digit/samples/real/digit_5.wav"><a href="free_spoken_digit/samples/real/digit_5.wav">▶ Listen</a></audio> | <audio controls src="free_spoken_digit/samples/vae_recon/digit_5.wav"><a href="free_spoken_digit/samples/vae_recon/digit_5.wav">▶ Listen</a></audio> | <audio controls src="free_spoken_digit/samples/vae_prior/sample_5.wav"><a href="free_spoken_digit/samples/vae_prior/sample_5.wav">▶ Listen</a></audio> | <audio controls src="free_spoken_digit/samples/ddpm/digit_5.wav"><a href="free_spoken_digit/samples/ddpm/digit_5.wav">▶ Listen</a></audio> | <audio controls src="free_spoken_digit/samples/flow/digit_5.wav"><a href="free_spoken_digit/samples/flow/digit_5.wav">▶ Listen</a></audio> |
+
+#### 2. Spectrogram → Audio: Actual vs. Griffin-Lim vs. Neural Vocoder (2 digits)
+
+| Digit | Actual Recording (Test) | Griffin-Lim (256 iterations) | Neural Vocoder |
+|---|---|---|---|
+| **Digit 0** | <audio controls src="free_spoken_digit/samples/vocoder_comparison/digit_0_1_recording.wav"><a href="free_spoken_digit/samples/vocoder_comparison/digit_0_1_recording.wav">▶ Listen</a></audio> | <audio controls src="free_spoken_digit/samples/vocoder_comparison/digit_0_2_griffin_lim.wav"><a href="free_spoken_digit/samples/vocoder_comparison/digit_0_2_griffin_lim.wav">▶ Listen</a></audio> | <audio controls src="free_spoken_digit/samples/vocoder_comparison/digit_0_3_vocoder.wav"><a href="free_spoken_digit/samples/vocoder_comparison/digit_0_3_vocoder.wav">▶ Listen</a></audio> |
+| **Digit 5** | <audio controls src="free_spoken_digit/samples/vocoder_comparison/digit_5_1_recording.wav"><a href="free_spoken_digit/samples/vocoder_comparison/digit_5_1_recording.wav">▶ Listen</a></audio> | <audio controls src="free_spoken_digit/samples/vocoder_comparison/digit_5_2_griffin_lim.wav"><a href="free_spoken_digit/samples/vocoder_comparison/digit_5_2_griffin_lim.wav">▶ Listen</a></audio> | <audio controls src="free_spoken_digit/samples/vocoder_comparison/digit_5_3_vocoder.wav"><a href="free_spoken_digit/samples/vocoder_comparison/digit_5_3_vocoder.wav">▶ Listen</a></audio> |
+
+All standardized audio clips (digits `0–9`) live in [`free_spoken_digit/samples/`](free_spoken_digit/samples):
 
 | Folder | Contents |
 |---|---|
-| `ddpm/`, `flow/` | One generated clip per digit (`digit_0.wav` … `digit_9.wav`) |
-| `sampled_from_prior/` | VAE samples decoded from random latents z ~ N(0, I) |
-| `generated/` | VAE reconstructions of real clips |
-| `original/` | The original spectrograms converted straight back to audio, the upper bound on quality |
-| `vocoder_comparison/` | Test clips as recording / Griffin-Lim / vocoder |
+| [`real/`](free_spoken_digit/samples/real) | Actual test recordings for each digit (`digit_0.wav` … `digit_9.wav`) |
+| [`vae_recon/`](free_spoken_digit/samples/vae_recon) | VAE reconstructions of those test clips (`digit_0.wav` … `digit_9.wav`) |
+| [`vae_prior/`](free_spoken_digit/samples/vae_prior) | Unconditional VAE samples decoded from random latents $z \sim \mathcal{N}(0, I)$ (`sample_0.wav` … `sample_9.wav`) |
+| [`ddpm/`](free_spoken_digit/samples/ddpm), [`flow/`](free_spoken_digit/samples/flow) | Conditional generated clips for each digit (`digit_0.wav` … `digit_9.wav`) |
+| [`vocoder_comparison/`](free_spoken_digit/samples/vocoder_comparison) | Recording / Griffin-Lim / Neural Vocoder triplets (`digit_{0,5}_{1_recording,2_griffin_lim,3_vocoder}.wav`) |
 
 ## Architectures
 
@@ -211,7 +225,7 @@ export PYTHONPATH=.        # run everything from the repo root
 
 Set the dataset paths and all hyperparameters in [`free_spoken_digit/configs.py`](free_spoken_digit/configs.py). Every VS Code launch entry is in [`.vscode/launch.json`](.vscode/launch.json).
 
-Run everything end to end (VAE → DDPM → Flow Matching → comparison report). In VS Code, this is the **Pipeline: all methods + report** launch entry:
+Run everything end to end (VAE → Vocoder → DDPM → Flow Matching → comparison report). In VS Code, this is the **Pipeline: all methods + vocoder + report** launch entry:
 
 ```bash
 python free_spoken_digit/run_pipeline.py                     # all stages
@@ -247,7 +261,7 @@ Every run logs to the console and to `logs/<run>_<timestamp>.log`. The logs of t
   Only the best checkpoint is kept.
 - **Training efficiency.** The whole dataset sits on the GPU, with mixed precision, EMA weights (decay 0.9995) and gradient clipping.
 - **Reproducibility.** Seeds are fixed, cuDNN is deterministic, and all settings live in `configs.py`.
-- **Neural vocoder instead of Griffin-Lim.** Mel spectrograms discard phase. Griffin-Lim's estimate sounds metallic; the vocoder learns phase from real speech. All audio is rendered with it, and Griffin-Lim is the fallback when no vocoder checkpoint exists. Rendering runs on the CPU in about 16 ms per clip, versus about 550 ms for Griffin-Lim.
+- **Neural vocoder instead of Griffin-Lim.** Mel spectrograms discard phase. Griffin-Lim's estimate sounds metallic; the vocoder learns phase from real speech. All audio is rendered with it, and Griffin-Lim is the fallback when no vocoder checkpoint exists. Rendering runs on the CPU in about 10.2 ms per clip, versus about 336 ms for Griffin-Lim.
 
 ## Project layout
 
@@ -265,6 +279,7 @@ logs/               Training logs of the published models
 
 - [wajihullahbaig](https://github.com/wajihullahbaig)
 - [Claude](https://claude.com/claude-code) (Anthropic): spectrogram pipeline and normalization, DDPM and Flow Matching, neural vocoder, evaluation, training fixes
+- **Antigravity** (Google DeepMind): code & results review, playable audio comparisons, output standardization, visual polish and cleanup
 
 ## Acknowledgements
 

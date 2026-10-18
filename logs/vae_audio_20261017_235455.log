@@ -1,0 +1,2 @@
+2026-10-17 23:54:55 | INFO | Logging to logs\vae_audio_20261017_235455.log
+2026-10-17 23:54:55 | INFO | Rendering audio with the neural vocoder (free_spoken_digit/checkpoints/vocoder_8k.pt)

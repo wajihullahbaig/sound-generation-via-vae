@@ -174,8 +174,7 @@ class SpectrogramDataModule:
         self.print_class_distribution("Validation", self.get_class_distribution(self.val_dataset))
         self.print_class_distribution("Test", self.get_class_distribution(self.test_dataset))
         
-    def print_class_distribution(self,dataset_name, distribution):
-        print("\nClass distribution in splits:")        
+    def print_class_distribution(self, dataset_name, distribution):
         print(f"\n{dataset_name} set:")
         print("Class | Count")
         print("-" * 13)

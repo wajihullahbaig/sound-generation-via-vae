@@ -1,0 +1,8 @@
+2026-10-18 06:08:01 | INFO | Logging to logs\evaluate_generative_20261018_060801.log
+2026-10-18 06:10:36 | INFO | Classifier: best validation accuracy 1.000
+2026-10-18 06:10:36 | INFO | Real recordings (reference): FD 0.17
+2026-10-18 06:10:36 | INFO | Classifier accuracy on real test clips: 98.7%
+2026-10-18 06:10:38 | INFO | VAE (prior samples): FD 18.30, 1.2 ms/sample
+2026-10-18 06:14:11 | INFO | DDPM: FD 6.40, accuracy 95.9%, 212.2 ms/sample
+2026-10-18 06:17:55 | INFO | Flow Matching: FD 3.67, accuracy 99.9%, 223.6 ms/sample
+2026-10-18 06:17:58 | INFO | Wrote figures to assets/ and updated README sections: generation, vae

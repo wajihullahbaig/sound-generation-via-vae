@@ -1,0 +1,11 @@
+2026-10-17 19:56:37 | INFO | Logging to logs\pipeline_20261017_195637.log
+2026-10-17 19:56:37 | INFO | === Stage 'vae': free_spoken_digit/main.py --train
+2026-10-17 21:41:48 | INFO | === Stage 'vae_report': free_spoken_digit/main.py --test
+2026-10-17 21:43:12 | INFO | === Stage 'vocoder': free_spoken_digit/train_vocoder.py --train --evaluate
+2026-10-17 23:54:49 | INFO | === Stage 'vae_audio': free_spoken_digit/create_audios.py
+2026-10-17 23:54:57 | INFO | === Stage 'ddpm': free_spoken_digit/train_generative.py --method ddpm --train
+2026-10-18 02:59:17 | INFO | === Stage 'flow': free_spoken_digit/train_generative.py --method flow --train
+2026-10-18 06:07:20 | INFO | === Stage 'samples': free_spoken_digit/train_generative.py --method ddpm --sample
+2026-10-18 06:07:38 | INFO | === Stage 'samples': free_spoken_digit/train_generative.py --method flow --sample
+2026-10-18 06:07:55 | INFO | === Stage 'report': free_spoken_digit/evaluate_generative.py
+2026-10-18 06:17:58 | INFO | Pipeline finished: see assets/, free_spoken_digit/samples/ and the README results

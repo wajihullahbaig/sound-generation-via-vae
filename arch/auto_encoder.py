@@ -222,7 +222,8 @@ class VAE(nn.Module):
             conv_strides, latent_dim, decoder_dropout_rate
         )
         
-        # Initialize weights
+        # Initialize weights using a local RNG so global seed is preserved
+        self._rng = torch.Generator().manual_seed(self.seed)
         self.apply(self._init_weights)
     
     def reparameterize(self, mu: torch.Tensor, log_var: torch.Tensor) -> torch.Tensor:
@@ -273,8 +274,7 @@ class VAE(nn.Module):
     def _init_weights(self, m):
         """Initialize model weights with Xavier initialization."""
         if isinstance(m, (nn.Conv2d, nn.ConvTranspose2d, nn.Linear)):
-            torch.manual_seed(self.seed)
-            nn.init.xavier_uniform_(m.weight)
+            nn.init.xavier_uniform_(m.weight, generator=self._rng)
             if m.bias is not None:
                 nn.init.zeros_(m.bias)
     
